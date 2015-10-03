@@ -1,7 +1,9 @@
 ﻿namespace AngleSharp.Io.Tests.Network
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Net;
     using AngleSharp.Io.Network;
     using FluentAssertions;
     using NUnit.Framework;
@@ -10,17 +12,40 @@
     public class ResponseTests
     {
         [Test]
-        public void DisposesContent()
+        public void Initialize()
+        {
+            // ARRANGE, ACT
+            var response = new Response();
+
+            // ASSERT
+            response.Content.Should().BeNull();
+            response.StatusCode.Should().Be(HttpStatusCode.Accepted);
+            response.Headers.Should().NotBeNull();
+            response.Headers.Should().BeEmpty();
+            response.Address.Should().BeNull();
+        }
+
+        [Test]
+        public void DisposesContentAndHeaders()
         {
             // ARRANGE
             var stream = new DisposableStream();
-            var response = new Response {Content = stream};
+            var response = new Response
+            {
+                Content = stream,
+                Headers = new Dictionary<String, String>
+                {
+                    {"Server", "Fake"},
+                    {"X-Foo", "Bar"}
+                }
+            };
 
             // ACT
             response.Dispose();
 
             // ASSERT
             stream.Disposed.Should().BeTrue();
+            response.Headers.Should().BeEmpty();
         }
 
         [Test]
@@ -35,6 +60,7 @@
             // ASSERT
             action.ShouldNotThrow();
         }
+
         class DisposableStream : Stream
         {
             public override Boolean CanRead
