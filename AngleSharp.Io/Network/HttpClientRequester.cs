@@ -1,12 +1,13 @@
 ﻿namespace AngleSharp.Io.Network
 {
+    using AngleSharp.Io.Extensions;
+    using AngleSharp.Network;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using AngleSharp.Network;
     using HttpMethod = System.Net.Http.HttpMethod;
 
     /// <summary>
@@ -29,14 +30,15 @@
         /// Checks if the given protocol is supported.
         /// </summary>
         /// <param name="protocol">
-        /// The protocol to check for, e.g. http.
+        /// The protocol to check for, e.g., http.
         /// </param>
         /// <returns>
         /// True if the protocol is supported, otherwise false.
         /// </returns>
         public Boolean SupportsProtocol(String protocol)
         {
-            return protocol.Equals("http", StringComparison.OrdinalIgnoreCase) || protocol.Equals("https", StringComparison.OrdinalIgnoreCase);
+            return protocol.Equals("http", StringComparison.OrdinalIgnoreCase) || 
+                   protocol.Equals("https", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -50,9 +52,10 @@
         public async Task<IResponse> RequestAsync(IRequest request, CancellationToken cancel)
         {
             // create the request message
-            var method = new HttpMethod(request.Method.ToString().ToUpper());
+            var method = new HttpMethod(request.Method.Stringify());
             var requestMessage = new HttpRequestMessage(method, request.Address);
             var contentHeaders = new List<KeyValuePair<String, String>>();
+
             foreach (var header in request.Headers)
             {
                 // Source:
@@ -65,12 +68,13 @@
             if (request.Content != null && method != HttpMethod.Get && method != HttpMethod.Head)
             {
                 requestMessage.Content = new StreamContent(request.Content);
+
                 foreach (var header in contentHeaders)
                     requestMessage.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
             }
 
             // execute the request
-            var responseMessage = await _client.SendAsync(requestMessage, cancel);
+            var responseMessage = await _client.SendAsync(requestMessage, cancel).ConfigureAwait(false);
 
             // convert the response
             var response = new Response
@@ -82,7 +86,8 @@
 
             if (responseMessage.Content != null)
             {
-                response.Content = await responseMessage.Content.ReadAsStreamAsync();
+                response.Content = await responseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
+
                 foreach (var pair in responseMessage.Content.Headers)
                     response.Headers[pair.Key] = String.Join(", ", pair.Value);
             }

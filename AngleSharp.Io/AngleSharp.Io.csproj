@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions\GeneralExtensions.cs" />
     <Compile Include="Network\HttpClientRequester.cs" />
     <Compile Include="Network\Response.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
