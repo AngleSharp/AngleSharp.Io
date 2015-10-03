@@ -42,11 +42,12 @@
         /// <summary>
         /// Performs an asynchronous request that can be cancelled.
         /// </summary>
-        /// <param name="request">The options to consider.</param><param name="cancel">The token for cancelling the task.</param>
+        /// <param name="request">The options to consider.</param>
+        /// <param name="cancel">The token for cancelling the task.</param>
         /// <returns>
         /// The task that will eventually give the response data.
         /// </returns>
-        public async Task<IResponse> RequestAsync(IRequest request, CancellationToken cancellationToken)
+        public async Task<IResponse> RequestAsync(IRequest request, CancellationToken cancel)
         {
             // create the request message
             var method = new HttpMethod(request.Method.ToString().ToUpper());
@@ -69,7 +70,7 @@
             }
 
             // execute the request
-            var responseMessage = await _client.SendAsync(requestMessage, cancellationToken);
+            var responseMessage = await _client.SendAsync(requestMessage, cancel);
 
             // convert the response
             var response = new Response
