@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-using AngleSharp;
-using AngleSharp.Network;
-using HttpMethod = System.Net.Http.HttpMethod;
-
-namespace Knapcode.AngleSharp.NetHttp
+﻿namespace AngleSharp.Io.Network
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using AngleSharp.Network;
+    using HttpMethod = System.Net.Http.HttpMethod;
+
     public class HttpClientRequester : IRequester
     {
         private readonly HttpClient _client;
