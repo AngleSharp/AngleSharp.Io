@@ -66,22 +66,5 @@
 
             return false;
         }
-
-        public static Stream StreamFromBytes(Byte[] content)
-        {
-            var stream = new MemoryStream(content);
-            stream.Position = 0;
-            return stream;
-        }
-
-        public static Stream StreamFromString(String s)
-        {
-            var stream = new MemoryStream();
-            var writer = new StreamWriter(stream);
-            writer.Write(s);
-            writer.Flush();
-            stream.Position = 0;
-            return stream;
-        }
     }
 }
