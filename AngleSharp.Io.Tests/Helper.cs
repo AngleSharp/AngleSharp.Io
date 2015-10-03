@@ -1,9 +1,9 @@
-﻿namespace AngleSharp.Core.Tests
+﻿namespace AngleSharp.Io.Tests
 {
-    using NUnit.Framework;
     using System;
     using System.IO;
     using System.Net.NetworkInformation;
+    using NUnit.Framework;
 
     /// <summary>
     /// Small (but quite useable) code to enable / disable some
@@ -39,7 +39,7 @@
             if (!NetworkInterface.GetIsNetworkAvailable())
                 return false;
 
-            foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
+            foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
             {
                 // discard because of standard reasons
                 if ((ni.OperationalStatus != OperationalStatus.Up) ||
