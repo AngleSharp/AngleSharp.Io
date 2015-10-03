@@ -5,6 +5,15 @@ AngleSharp.Io
 
 AngleSharp.Io extends AngleSharp with powerful requesters, caching mechanisms, and storage systems. It is coupled more strongly to the underlying operating system than AngleSharp itself. Therefore it has stronger dependencies and demands and cannot be released as a PCL.
 
+Current status of this repository:
+
+[![Build status](https://img.shields.io/appveyor/ci/FlorianRappl/AngleSharp-Io.svg?style=flat-square)](https://ci.appveyor.com/project/FlorianRappl/AngleSharp-Io)
+[![Issues open](https://img.shields.io/github/issues/AngleSharp/AngleSharp.Io.svg?style=flat-square)](https://github.com/AngleSharp/AngleSharp.Io/issues)
+[![Nuget count](https://img.shields.io/nuget/v/AngleSharp.Io.svg?style=flat-square)](https://www.nuget.org/packages/AngleSharp.Io/)
+[![Nuget downloads](https://img.shields.io/nuget/dt/AngleSharp.Io.svg?style=flat-square)](https://www.nuget.org/packages/AngleSharp.Io/)
+
+**Status** Currently in experimental stage.
+
 Some legal stuff
 ----------------
 
