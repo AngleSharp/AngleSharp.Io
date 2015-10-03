@@ -1,12 +1,12 @@
 ﻿namespace AngleSharp.Io.Tests.Network
 {
+    using AngleSharp.Io.Network;
+    using FluentAssertions;
+    using NUnit.Framework;
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
-    using AngleSharp.Io.Network;
-    using FluentAssertions;
-    using NUnit.Framework;
 
     [TestFixture]
     public class ResponseTests
@@ -65,22 +65,22 @@
         {
             public override Boolean CanRead
             {
-                get;
+                get { return false; }
             }
 
             public override Boolean CanSeek
             {
-                get;
+                get { return false; }
             }
 
             public override Boolean CanWrite
             {
-                get;
+                get { return false; }
             }
 
             public override Int64 Length
             {
-                get;
+                get { return 0; }
             }
 
             public override Int64 Position

@@ -180,26 +180,31 @@
             public Request Request
             {
                 get;
+                private set;
             }
 
             public HttpClientRequester Target
             {
                 get;
+                private set;
             }
 
             public HttpClient HttpClient
             {
                 get;
+                private set;
             }
 
             public TestHandler TestHandler
             {
                 get;
+                private set;
             }
 
             public HttpResponseMessage HttpResponseMessage
             {
                 get;
+                private set;
             }
 
             public HttpRequestMessage HttpRequestMessage
