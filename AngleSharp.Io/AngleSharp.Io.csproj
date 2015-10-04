@@ -47,7 +47,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConfigurationExtensions.cs" />
+    <Compile Include="Dom\WebSocketReadyState.cs" />
     <Compile Include="Extensions\GeneralExtensions.cs" />
+    <Compile Include="Dom\IWebSocket.cs" />
     <Compile Include="Network\HttpClientRequester.cs" />
     <Compile Include="Network\Response.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
