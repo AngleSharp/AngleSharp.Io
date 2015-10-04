@@ -15,7 +15,21 @@
     /// </summary>
     public class HttpClientRequester : IRequester
     {
+        #region Fields
+
         readonly HttpClient _client;
+
+        #endregion
+
+        #region ctor
+
+        /// <summary>
+        /// Creates a new HTTP client request with a new HttpClient instance.
+        /// </summary>
+        public HttpClientRequester()
+            : this(new HttpClient())
+        {
+        }
 
         /// <summary>
         /// Creates a new HTTP client request.
@@ -25,6 +39,10 @@
         {
             _client = client;
         }
+
+        #endregion
+
+        #region Methods
 
         /// <summary>
         /// Checks if the given protocol is supported.
@@ -94,5 +112,7 @@
 
             return response;
         }
+
+        #endregion
     }
 }
