@@ -25,11 +25,9 @@
         const Int32 SendChunkSize = 1024;
 
         readonly Url _url;
-        readonly MemoryStream _buffered;
         readonly CancellationTokenSource _cts;
         readonly ClientWebSocket _ws;
 
-        String _protocol;
         WebSocketReadyState _state;
 
         #endregion
@@ -86,9 +84,7 @@
         public WebSocket(String url, params String[] protocols)
         {
             _url = new Url(url);
-            _protocol = String.Empty;
             _state = WebSocketReadyState.Connecting;
-            _buffered = new MemoryStream();
             _cts = new CancellationTokenSource();
 
             if (_url.IsInvalid || _url.IsRelative)
@@ -141,7 +137,7 @@
         [DomName("bufferedAmount")]
         public Int64 Buffered
         {
-            get { return _buffered.Length; }
+            get { return 0; }
         }
 
         /// <summary>
@@ -150,7 +146,7 @@
         [DomName("protocol")]
         public String Protocol
         {
-            get { return _protocol; }
+            get { return _ws.SubProtocol ?? String.Empty; }
         }
 
         #endregion
@@ -164,7 +160,14 @@
         [DomName("send")]
         public void Send(String data)
         {
-            SendAsync(data).Wait();
+            if (_state == WebSocketReadyState.Open)
+            {
+                SendAsync(data).Forget();
+            } 
+            else if (_state != WebSocketReadyState.Connecting)
+            {
+                throw new Exception("WebSocket is already in CLOSING or CLOSED state.");
+            }
         }
 
         /// <summary>
@@ -173,9 +176,12 @@
         [DomName("close")]
         public void Close()
         {
-            _state = WebSocketReadyState.Closing;
-            StopListen();
-            OnDisconnected();
+            if (_state != WebSocketReadyState.Closed && _state != WebSocketReadyState.Closing)
+            {
+                _state = WebSocketReadyState.Closing;
+                StopListen();
+                OnDisconnected();
+            }
         }
 
         void IDisposable.Dispose()
@@ -200,17 +206,14 @@
 
         async Task SendAsync(String message)
         {
-            if (_ws.State != WebSocketState.Open)
-                throw new Exception("WebSocket is already in CLOSING or CLOSED state.");
-
             var messageBuffer = Encoding.UTF8.GetBytes(message);
             var remainder = 0;
             var messagesCount = Math.DivRem(messageBuffer.Length, SendChunkSize, out remainder);
 
             if (remainder > 0)
                 messagesCount++;
-            else
-                remainder = SendChunkSize;
+
+            remainder = messageBuffer.Length;
 
             for (var i = 0; i < messagesCount; i++)
             {
@@ -219,6 +222,7 @@
                 var count = lastMessage ? remainder : SendChunkSize;
                 var segment = new ArraySegment<Byte>(messageBuffer, offset, count);
                 await _ws.SendAsync(segment, WebSocketMessageType.Text, lastMessage, _cts.Token).ConfigureAwait(false);
+                remainder -= SendChunkSize;
             }
         }
 
