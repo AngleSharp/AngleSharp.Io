@@ -22,34 +22,43 @@
 
         #endregion
 
+        #region Event Names
+
+        static readonly String OpenEvent = "open";
+        static readonly String CloseEvent = "close";
+        static readonly String MessageEvent = "message";
+        static readonly String ErrorEvent = "error";
+
+        #endregion
+
         #region Events
 
         [DomName("onopen")]
         public event DomEventHandler Opened
         {
-            add { AddEventListener("open", value, false); }
-            remove { RemoveEventListener("open", value, false); }
+            add { AddEventListener(OpenEvent, value, false); }
+            remove { RemoveEventListener(OpenEvent, value, false); }
         }
 
         [DomName("onmessage")]
         public event DomEventHandler Message
         {
-            add { AddEventListener("message", value, false); }
-            remove { RemoveEventListener("message", value, false); }
+            add { AddEventListener(MessageEvent, value, false); }
+            remove { RemoveEventListener(MessageEvent, value, false); }
         }
 
         [DomName("onerror")]
         public event DomEventHandler Error
         {
-            add { AddEventListener("error", value, false); }
-            remove { RemoveEventListener("error", value, false); }
+            add { AddEventListener(ErrorEvent, value, false); }
+            remove { RemoveEventListener(ErrorEvent, value, false); }
         }
 
         [DomName("onclose")]
         public event DomEventHandler Closed
         {
-            add { AddEventListener("close", value, false); }
-            remove { RemoveEventListener("close", value, false); }
+            add { AddEventListener(CloseEvent, value, false); }
+            remove { RemoveEventListener(CloseEvent, value, false); }
         }
 
         #endregion
