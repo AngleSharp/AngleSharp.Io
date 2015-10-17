@@ -2,6 +2,7 @@
 {
     using AngleSharp.Network;
     using System;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Some general extension methods.
@@ -28,6 +29,15 @@
                 default:
                     return method.ToString().ToUpperInvariant();
             }
+        }
+
+        /// <summary>
+        /// Forgets the given task. Exceptions are ignored and continuations
+        /// are pointless.
+        /// </summary>
+        /// <param name="task">The task to forget after firing.</param>
+        public static void Forget(this Task task)
+        {
         }
     }
 }
