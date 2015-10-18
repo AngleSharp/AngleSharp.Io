@@ -5,7 +5,6 @@
     using AngleSharp.Dom.Events;
     using AngleSharp.Io.Extensions;
     using System;
-    using System.IO;
     using System.Linq;
     using System.Net.WebSockets;
     using System.Text;
@@ -27,6 +26,7 @@
         readonly Url _url;
         readonly CancellationTokenSource _cts;
         readonly ClientWebSocket _ws;
+        readonly IWindow _window;
 
         WebSocketReadyState _state;
 
@@ -78,14 +78,16 @@
         /// <summary>
         /// Creates a new WebSocket instance.
         /// </summary>
+        /// <param name="window">The parent context.</param>
         /// <param name="url">The URL to connect to.</param>
         /// <param name="protocols">The protocols to allow.</param>
         [DomConstructor]
-        public WebSocket(String url, params String[] protocols)
+        public WebSocket(IWindow window, String url, params String[] protocols)
         {
             _url = new Url(url);
             _state = WebSocketReadyState.Connecting;
             _cts = new CancellationTokenSource();
+            _window = window;
 
             if (_url.IsInvalid || _url.IsRelative)
                 throw new DomException(DomError.Syntax);
@@ -103,8 +105,9 @@
         async Task ConnectAsync(String url)
         {
             await _ws.ConnectAsync(new Uri(url), _cts.Token).ConfigureAwait(false);
+            _state = WebSocketReadyState.Open;
             OnConnected();
-            StartListen().Forget();
+            ListenAsync().Forget();
         }
 
         #endregion
@@ -178,15 +181,14 @@
         {
             if (_state != WebSocketReadyState.Closed && _state != WebSocketReadyState.Closing)
             {
-                _state = WebSocketReadyState.Closing;
-                StopListen();
-                OnDisconnected();
+                CloseAsync().Forget();
             }
         }
 
         void IDisposable.Dispose()
         {
-            StopListen();
+            CancelListener();
+            _ws.Dispose();
         }
 
         #endregion
@@ -226,7 +228,15 @@
             }
         }
 
-        async Task StartListen()
+        async Task CloseAsync()
+        {
+            _state = WebSocketReadyState.Closing;
+            await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, String.Empty, _cts.Token).ConfigureAwait(false);
+            CancelListener();
+            OnDisconnected();
+        }
+
+        async Task ListenAsync()
         {
             var buffer = new Byte[ReceiveChunkSize];
             var stringResult = new StringBuilder();
@@ -239,11 +249,7 @@
                     var result = await _ws.ReceiveAsync(segment, _cts.Token).ConfigureAwait(false);
 
                     if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, String.Empty, _cts.Token).ConfigureAwait(false);
-                        OnDisconnected();
-                        return;
-                    }
+                        break;
 
                     stringResult.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
 
@@ -253,39 +259,50 @@
                         stringResult.Clear();
                     }
                 }
+
+                await CloseAsync().ConfigureAwait(false);
             }
-            catch
+            catch (Exception ex)
             {
+                OnError(ex);
+                CancelListener();
                 OnDisconnected();
-            }
-            finally
-            {
-                StopListen();
             }
         }
 
-        void StopListen()
+        void CancelListener()
         {
             _cts.Cancel();
             _ws.Abort();
-            _ws.Dispose();
+            _state = WebSocketReadyState.Closed;
         }
 
         void OnMessage(String message)
         {
-            this.Dispatch(new MessageEvent(MessageEvent, data: message, origin: _url.Href));
+            var evt = new MessageEvent();
+            evt.Init(MessageEvent, false, false, message, _url.Origin, String.Empty, _window);
+            this.Dispatch(evt);
+        }
+
+        void OnError(Exception ex)
+        {
+            var evt = new ErrorEvent();
+            evt.Init(ErrorEvent, false, false);
+            this.Dispatch(evt);
         }
 
         void OnDisconnected()
         {
-            _state = WebSocketReadyState.Closed;
-            this.Dispatch(new Event(CloseEvent));
+            var evt = new Event();
+            evt.Init(CloseEvent, false, false);
+            this.Dispatch(evt);
         }
 
         void OnConnected()
         {
-            _state = WebSocketReadyState.Open;
-            this.Dispatch(new Event(OpenEvent));
+            var evt = new Event();
+            evt.Init(OpenEvent, false, false);
+            this.Dispatch(evt);
         }
 
         #endregion
