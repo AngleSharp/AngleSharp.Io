@@ -43,6 +43,9 @@
 
         #region Events
 
+        /// <summary>
+        /// Adds or removes the handler for the open event.
+        /// </summary>
         [DomName("onopen")]
         public event DomEventHandler Opened
         {
@@ -50,6 +53,9 @@
             remove { RemoveEventListener(OpenEvent, value, false); }
         }
 
+        /// <summary>
+        /// Adds or removes the handler for the message event.
+        /// </summary>
         [DomName("onmessage")]
         public event DomEventHandler Message
         {
@@ -57,6 +63,9 @@
             remove { RemoveEventListener(MessageEvent, value, false); }
         }
 
+        /// <summary>
+        /// Adds or removes the handler for the error event.
+        /// </summary>
         [DomName("onerror")]
         public event DomEventHandler Error
         {
@@ -64,6 +73,9 @@
             remove { RemoveEventListener(ErrorEvent, value, false); }
         }
 
+        /// <summary>
+        /// Adds or removes the handler for the close event.
+        /// </summary>
         [DomName("onclose")]
         public event DomEventHandler Closed
         {
