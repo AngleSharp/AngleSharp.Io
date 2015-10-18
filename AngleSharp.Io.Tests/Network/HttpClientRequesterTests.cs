@@ -1,21 +1,20 @@
 ﻿namespace AngleSharp.Io.Tests.Network
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Net;
-    using System.Net.Http;
-    using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
     using AngleSharp.Io.Network;
+    using AngleSharp.Io.Tests.Network.Mocks;
     using AngleSharp.Network;
     using AngleSharp.Services.Default;
     using FluentAssertions;
     using NUnit.Framework;
-    using NetHttpMethod = System.Net.Http.HttpMethod;
+    using System;
+    using System.IO;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
     using AngleSharpHttpMethod = AngleSharp.Network.HttpMethod;
+    using NetHttpMethod = System.Net.Http.HttpMethod;
 
 
     [TestFixture]
@@ -25,7 +24,7 @@
         public async Task RequestWithContent()
         {
             // ARRANGE
-            var ts = new TestState();
+            var ts = new HttpMockState();
 
             // ACT
             await ts.Target.RequestAsync(ts.Request, CancellationToken.None);
@@ -48,7 +47,7 @@
         public async Task RequestWithoutContent()
         {
             // ARRANGE
-            var ts = new TestState {Request = {Content = null, Method = AngleSharpHttpMethod.Get}};
+            var ts = new HttpMockState { Request = { Content = null, Method = AngleSharpHttpMethod.Get } };
 
             // ACT
             await ts.Target.RequestAsync(ts.Request, CancellationToken.None);
@@ -68,7 +67,7 @@
         public async Task ResponseWithContent()
         {
             // ARRANGE
-            var ts = new TestState();
+            var ts = new HttpMockState();
 
             // ACT
             var response = await ts.Target.RequestAsync(ts.Request, CancellationToken.None);
@@ -89,7 +88,7 @@
         public async Task ResponseWithoutContent()
         {
             // ARRANGE
-            var ts = new TestState {HttpResponseMessage = {Content = null}};
+            var ts = new HttpMockState { HttpResponseMessage = { Content = null } };
 
             // ACT
             var response = await ts.Target.RequestAsync(ts.Request, CancellationToken.None);
@@ -108,14 +107,14 @@
         public void SupportsHttp()
         {
             // ARRANGE, ACT, ASSERT
-            new TestState().Target.SupportsProtocol("HTTP").Should().BeTrue();
+            new HttpMockState().Target.SupportsProtocol("HTTP").Should().BeTrue();
         }
 
         [Test]
         public void SupportsHttps()
         {
             // ARRANGE, ACT, ASSERT
-            new TestState().Target.SupportsProtocol("HTTPS").Should().BeTrue();
+            new HttpMockState().Target.SupportsProtocol("HTTPS").Should().BeTrue();
         }
 
         [Test]
@@ -136,134 +135,6 @@
 
                 // ASSERT
                 document.QuerySelector("h1").ToHtml().Should().Be("<h1>Herman Melville - Moby-Dick</h1>");
-            }
-        }
-
-        class TestState
-        {
-            public TestState()
-            {
-                // dependencies
-
-                TestHandler = new TestHandler(this);
-                HttpClient = new HttpClient(TestHandler);
-
-                // data
-                Request = new Request
-                {
-                    Method = AngleSharpHttpMethod.Post,
-                    Address = new Url("http://example/path?query=value"),
-                    Headers = new Dictionary<String, String>
-                    {
-                        {"User-Agent", "Foo/2.0"},
-                        {"Cookie", "foo=bar"},
-                        {"Content-Type", "application/json"},
-                        {"Content-Length", "9"}
-                    },
-                    Content = new MemoryStream(Encoding.UTF8.GetBytes("\"request\""))
-                };
-                HttpResponseMessage = new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent("\"response\"", Encoding.UTF8, "application/json"),
-                    Headers =
-                    {
-                        {"Server", "Fake"},
-                        {"X-Powered-By", "Magic"},
-                        {"X-CSV", new[] {"foo", "bar"}}
-                    }
-                };
-
-                // setup
-                Target = new HttpClientRequester(HttpClient);
-            }
-
-            public Request Request
-            {
-                get;
-                private set;
-            }
-
-            public HttpClientRequester Target
-            {
-                get;
-                private set;
-            }
-
-            public HttpClient HttpClient
-            {
-                get;
-                private set;
-            }
-
-            public TestHandler TestHandler
-            {
-                get;
-                private set;
-            }
-
-            public HttpResponseMessage HttpResponseMessage
-            {
-                get;
-                private set;
-            }
-
-            public HttpRequestMessage HttpRequestMessage
-            {
-                get;
-                set;
-            }
-
-            public Byte[] HttpRequestMessageContent
-            {
-                get;
-                set;
-            }
-        }
-
-        class TestHandler : DelegatingHandler
-        {
-            readonly TestState _testState;
-
-            public TestHandler(TestState testState)
-            {
-                _testState = testState;
-            }
-
-            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            {
-                _testState.HttpRequestMessage = request;
-                if (request.Content != null)
-                    _testState.HttpRequestMessageContent = await request.Content.ReadAsByteArrayAsync();
-
-                _testState.HttpResponseMessage.RequestMessage = request;
-                return _testState.HttpResponseMessage;
-            }
-        }
-
-        class Request : IRequest
-        {
-            public AngleSharpHttpMethod Method
-            {
-                get;
-                set;
-            }
-
-            public Url Address
-            {
-                get;
-                set;
-            }
-
-            public Dictionary<String, String> Headers
-            {
-                get;
-                set;
-            }
-
-            public Stream Content
-            {
-                get;
-                set;
             }
         }
     }
