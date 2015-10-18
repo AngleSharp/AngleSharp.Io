@@ -98,16 +98,28 @@
                 throw new DomException(DomError.Syntax);
 
             _ws = new ClientWebSocket();
+
+            foreach (var protocol in protocols)
+                _ws.Options.AddSubProtocol(protocol);
+
             _ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
             ConnectAsync(url).Forget();
         }
 
         async Task ConnectAsync(String url)
         {
-            await _ws.ConnectAsync(new Uri(url), _cts.Token).ConfigureAwait(false);
-            _state = WebSocketReadyState.Open;
-            OnConnected();
-            ListenAsync().Forget();
+            try
+            {
+                await _ws.ConnectAsync(new Uri(url), _cts.Token).ConfigureAwait(false);
+                _state = WebSocketReadyState.Open;
+                OnConnected();
+                ListenAsync().Forget();
+            }
+            catch (Exception ex)
+            {
+                _state = WebSocketReadyState.Closed;
+                OnError(ex);
+            }
         }
 
         #endregion
@@ -249,7 +261,10 @@
                     var result = await _ws.ReceiveAsync(segment, _cts.Token).ConfigureAwait(false);
 
                     if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        await CloseAsync().ConfigureAwait(false);
                         break;
+                    }
 
                     stringResult.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
 
@@ -259,8 +274,6 @@
                         stringResult.Clear();
                     }
                 }
-
-                await CloseAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
