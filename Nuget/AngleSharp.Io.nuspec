@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>AngleSharp.Io</id>
-    <version>0.0.1</version>
+    <version>0.1.0</version>
     <authors>AngleSharp</authors>
     <owners>Florian Rappl</owners>
     <licenseUrl>https://github.com/AngleSharp/AngleSharp.Io/blob/master/LICENSE</licenseUrl>
@@ -14,7 +14,7 @@
     <copyright>Copyright 2015, AngleSharp</copyright>
     <tags>html html5 css css3 dom requester http https io filesystem storage httpclient cache</tags>
     <dependencies> 
-      <dependency id="AngleSharp" version="0.9.2" />
+      <dependency id="AngleSharp" version="0.9.3" />
     </dependencies>
   </metadata>
 </package>
