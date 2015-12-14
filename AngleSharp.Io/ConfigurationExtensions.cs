@@ -46,6 +46,8 @@
                 var service = new LoaderService(requesters);
                 return configuration.With(service);
             }
+
+            return configuration;
         }
     }
 }
