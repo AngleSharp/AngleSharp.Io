@@ -102,17 +102,23 @@
             _window = window;
 
             if (_url.IsInvalid || _url.IsRelative)
+            {
                 throw new DomException(DomError.Syntax);
+            }
 
             var invalid = protocols.Length - protocols.Distinct().Where(IsValid).Count();
 
             if (invalid > 0)
+            {
                 throw new DomException(DomError.Syntax);
+            }
 
             _ws = new ClientWebSocket();
 
             foreach (var protocol in protocols)
+            {
                 _ws.Options.AddSubProtocol(protocol);
+            }
 
             _ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
             ConnectAsync(url).Forget();
@@ -221,10 +227,12 @@
 
         static Boolean IsValid(String protocol)
         {
-            for (int i = 0; i < protocol.Length; i++)
+            for (var i = 0; i < protocol.Length; i++)
             {
                 if (protocol[i] < 0x21 || protocol[i] > 0x7e)
+                {
                     return false;
+                }
             }
 
             return true;
@@ -237,7 +245,9 @@
             var messagesCount = Math.DivRem(messageBuffer.Length, SendChunkSize, out remainder);
 
             if (remainder > 0)
+            {
                 messagesCount++;
+            }
 
             remainder = messageBuffer.Length;
 

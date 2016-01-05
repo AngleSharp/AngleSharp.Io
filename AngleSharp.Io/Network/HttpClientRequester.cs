@@ -55,8 +55,8 @@
         /// </returns>
         public Boolean SupportsProtocol(String protocol)
         {
-            return protocol.Equals("http", StringComparison.OrdinalIgnoreCase) || 
-                   protocol.Equals("https", StringComparison.OrdinalIgnoreCase);
+            return protocol.Equals(ProtocolNames.Http, StringComparison.OrdinalIgnoreCase) ||
+                   protocol.Equals(ProtocolNames.Https, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -79,7 +79,9 @@
                 // Source:
                 // https://github.com/aspnet/Mvc/blob/02c36a1c4824936682b26b6c133d11bebee822a2/src/Microsoft.AspNet.Mvc.WebApiCompatShim/HttpRequestMessage/HttpRequestMessageFeature.cs
                 if (!requestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value))
+                {
                     contentHeaders.Add(new KeyValuePair<String, String>(header.Key, header.Value));
+                }
             }
 
             // set up the content
@@ -88,7 +90,9 @@
                 requestMessage.Content = new StreamContent(request.Content);
 
                 foreach (var header in contentHeaders)
+                {
                     requestMessage.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                }
             }
 
             // execute the request
@@ -102,12 +106,17 @@
                 StatusCode = responseMessage.StatusCode
             };
 
-            if (responseMessage.Content != null)
-            {
-                response.Content = await responseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            // get the anticipated content
+            var content = responseMessage.Content;
 
-                foreach (var pair in responseMessage.Content.Headers)
+            if (content != null)
+            {
+                response.Content = await content.ReadAsStreamAsync().ConfigureAwait(false);
+
+                foreach (var pair in content.Headers)
+                {
                     response.Headers[pair.Key] = String.Join(", ", pair.Value);
+                }
             }
 
             return response;
