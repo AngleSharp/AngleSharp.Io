@@ -20,14 +20,8 @@
         /// <returns>The new configuration.</returns>
         public static IConfiguration WithRequesters(this IConfiguration configuration)
         {
-            if (!configuration.Services.OfType<ILoaderService>().Any())
-            {
-                var requesters = new IRequester[] { new HttpClientRequester(), new DataRequester() };
-                var service = new LoaderService(requesters);
-                return configuration.With(service);
-            }
-
-            return configuration;
+            var httpClient = new HttpClient();
+            return configuration.WithHttpClientRequesters(httpClient);
         }
 
 
