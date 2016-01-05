@@ -9,39 +9,32 @@
     using System.Net.Http;
 
     /// <summary>
-    /// Additional extensions for improved requesters.
+    /// Additional extensions for using requesters.
     /// </summary>
     public static class ConfigurationExtensions
     {
         /// <summary>
-        /// Adds a loader service that comes with all (improved) requesters.
+        /// Adds a loader service that uses HttpClient Requester.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
         /// <returns>The new configuration.</returns>
-        public static IConfiguration WithRequesters(this IConfiguration configuration)
+        public static IConfiguration WithHttpClientRequesters(this IConfiguration configuration)
         {
-            if (!configuration.Services.OfType<ILoaderService>().Any())
-            {
-                var requesters = new IRequester [] { new HttpClientRequester(), new DataRequester() };
-                var service = new LoaderService(requesters);
-                return configuration.With(service);
-            }
-
-            return configuration;
+            var httpClient = new HttpClient();
+            return configuration.WithHttpClientRequesters(httpClient);
         }
 
 
         /// <summary>
-        /// Adds a loader service that comes with all (improved) requesters.
+        /// Adds a loader service that uses HttpClient Requester.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
-        /// <param name="httpMessageHandler">The HTTP handler stack to use for sending requests.</param>
+        /// <param name="httpClient">The HTTP client to use for requests.</param>
         /// <returns>The new configuration.</returns>
-        public static IConfiguration WithHttpRequesters(this IConfiguration configuration, HttpMessageHandler httpMessageHandler)
+        public static IConfiguration WithHttpClientRequesters(this IConfiguration configuration, HttpClient httpClient)
         {
             if (!configuration.Services.OfType<ILoaderService>().Any())
             {
-                var httpClient = new HttpClient(httpMessageHandler);
                 var requesters = new IRequester[] { new HttpClientRequester(httpClient), new DataRequester() };
                 var service = new LoaderService(requesters);
                 return configuration.With(service);
