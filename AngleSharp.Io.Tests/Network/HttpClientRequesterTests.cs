@@ -130,7 +130,7 @@
                 var request = DocumentRequest.Get(Url.Create("http://httpbin.org/html"));
 
                 // ACT
-                var response = await context.Loader.LoadAsync(request, CancellationToken.None);
+                var response = await context.Loader.DownloadAsync(request).Task;
                 var document = await context.OpenAsync(response, CancellationToken.None);
 
                 // ASSERT
