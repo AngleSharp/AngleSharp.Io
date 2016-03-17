@@ -1,6 +1,7 @@
 ﻿namespace AngleSharp.Io.Tests.Network
 {
     using AngleSharp.Io.Network;
+    using AngleSharp.Extensions;
     using AngleSharp.Io.Tests.Network.Mocks;
     using AngleSharp.Network;
     using AngleSharp.Services.Default;
