@@ -93,6 +93,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Helper.cs" />
+    <Compile Include="Network\FileRequesterTests.cs" />
     <Compile Include="Network\FtpRequesterTests.cs" />
     <Compile Include="Network\HttpClientRequesterTests.cs" />
     <Compile Include="Network\Mocks\Request.cs" />
@@ -106,6 +107,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="TestContent.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
