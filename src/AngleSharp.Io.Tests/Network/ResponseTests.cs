@@ -1,10 +1,9 @@
 ﻿namespace AngleSharp.Io.Tests.Network
 {
-    using AngleSharp.Io.Network;
+    using AngleSharp.Network.Default;
     using FluentAssertions;
     using NUnit.Framework;
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Net;
 
@@ -23,42 +22,6 @@
             response.Headers.Should().NotBeNull();
             response.Headers.Should().BeEmpty();
             response.Address.Should().BeNull();
-        }
-
-        [Test]
-        public void DisposesContentAndHeaders()
-        {
-            // ARRANGE
-            var stream = new DisposableStream();
-            var response = new Response
-            {
-                Content = stream,
-                Headers = new Dictionary<String, String>
-                {
-                    {"Server", "Fake"},
-                    {"X-Foo", "Bar"}
-                }
-            };
-
-            // ACT
-            response.Dispose();
-
-            // ASSERT
-            stream.Disposed.Should().BeTrue();
-            response.Headers.Should().BeEmpty();
-        }
-
-        [Test]
-        public void DisposesNothingWhenContentIsNull()
-        {
-            // ARRANGE
-            var response = new Response {Content = null};
-
-            // ACT
-            Action action = () => response.Dispose();
-
-            // ASSERT
-            action.ShouldNotThrow();
         }
 
         class DisposableStream : Stream

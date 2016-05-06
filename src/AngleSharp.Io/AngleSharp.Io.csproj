@@ -53,7 +53,6 @@
     <Compile Include="Dom\WebSocket.cs" />
     <Compile Include="Interfaces\IStorage.cs" />
     <Compile Include="Network\HttpClientRequester.cs" />
-    <Compile Include="Network\Response.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

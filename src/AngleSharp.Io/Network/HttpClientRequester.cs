@@ -2,6 +2,7 @@
 {
     using AngleSharp.Io.Extensions;
     using AngleSharp.Network;
+    using AngleSharp.Network.Default;
     using System;
     using System.Collections.Generic;
     using System.Linq;
