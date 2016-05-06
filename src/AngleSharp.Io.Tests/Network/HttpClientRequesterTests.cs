@@ -1,5 +1,6 @@
 ﻿namespace AngleSharp.Io.Tests.Network
 {
+    using AngleSharp.Extensions;
     using AngleSharp.Io.Network;
     using AngleSharp.Io.Tests.Network.Mocks;
     using AngleSharp.Network;
@@ -15,7 +16,6 @@
     using System.Threading.Tasks;
     using AngleSharpHttpMethod = AngleSharp.Network.HttpMethod;
     using NetHttpMethod = System.Net.Http.HttpMethod;
-
 
     [TestFixture]
     public class HttpClientRequesterTests
@@ -125,7 +125,7 @@
                 // ARRANGE
                 var httpClient = new HttpClient();
                 var requester = new HttpClientRequester(httpClient);
-                var configuration = new Configuration(new[] { new LoaderService(new[] { requester }) });
+                var configuration = Configuration.Default.With(new LoaderService(new[] { requester }));
                 var context = BrowsingContext.New(configuration);
                 var request = DocumentRequest.Get(Url.Create("http://httpbin.org/html"));
 

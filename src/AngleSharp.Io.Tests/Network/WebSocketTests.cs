@@ -22,7 +22,7 @@
                 var messages = new List<String>();
                 var closed = new TaskCompletionSource<Boolean>();
                 var document = await BrowsingContext.New().OpenNewAsync("https://www.websocket.org/echo.html");
-                var ws = new WebSocket(document.DefaultView, "wss://echo.websocket.org");
+                var ws = new WebSocket(document.DefaultView, "ws://echo.websocket.org");
 
                 // ACT
                 ws.Opened += (s, ev) => ws.Send(message);
