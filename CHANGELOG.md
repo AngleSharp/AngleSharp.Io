@@ -1,6 +1,7 @@
 # 0.3.0
 
-- 
+- Added a File requester (#11)
+- Added a FTP requester (#10)
 
 # 0.2.0
 
