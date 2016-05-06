@@ -93,6 +93,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Helper.cs" />
+    <Compile Include="Network\FtpRequesterTests.cs" />
     <Compile Include="Network\HttpClientRequesterTests.cs" />
     <Compile Include="Network\Mocks\Request.cs" />
     <Compile Include="Network\Mocks\HttpMockHandler.cs" />

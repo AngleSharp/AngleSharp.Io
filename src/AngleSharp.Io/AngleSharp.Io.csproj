@@ -52,6 +52,7 @@
     <Compile Include="Extensions\GeneralExtensions.cs" />
     <Compile Include="Dom\WebSocket.cs" />
     <Compile Include="Interfaces\IStorage.cs" />
+    <Compile Include="Network\FtpRequester.cs" />
     <Compile Include="Network\HttpClientRequester.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
