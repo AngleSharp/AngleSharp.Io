@@ -19,7 +19,7 @@
             set;
         }
 
-        public Dictionary<String, String> Headers
+        public IDictionary<String, String> Headers
         {
             get;
             set;

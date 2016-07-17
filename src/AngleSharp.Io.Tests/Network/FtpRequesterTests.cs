@@ -34,7 +34,7 @@
             var document = await context.OpenAsync(res => res.Content("<a href='ftp://ftp.funet.fi/pub/standards/RFC/rfc959.txt'>Download</a>"));
             var result = await document.QuerySelector<IHtmlAnchorElement>("a").NavigateAsync();
             var content = result.Body.TextContent;
-            Assert.AreEqual(145730, content.Length);
+            Assert.AreEqual(147316, content.Length);
         }
 
         [Test]

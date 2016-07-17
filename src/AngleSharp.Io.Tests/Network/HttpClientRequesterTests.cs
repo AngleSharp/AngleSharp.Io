@@ -4,7 +4,6 @@
     using AngleSharp.Io.Network;
     using AngleSharp.Io.Tests.Network.Mocks;
     using AngleSharp.Network;
-    using AngleSharp.Services.Default;
     using FluentAssertions;
     using NUnit.Framework;
     using System;
@@ -125,7 +124,7 @@
                 // ARRANGE
                 var httpClient = new HttpClient();
                 var requester = new HttpClientRequester(httpClient);
-                var configuration = Configuration.Default.With(new LoaderService(new[] { requester }));
+                var configuration = Configuration.Default.WithDefaultLoader(requesters: new[] { requester });
                 var context = BrowsingContext.New(configuration);
                 var request = DocumentRequest.Get(Url.Create("http://httpbin.org/html"));
 
