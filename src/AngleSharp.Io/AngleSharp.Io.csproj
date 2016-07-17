@@ -33,7 +33,7 @@
     <DocumentationFile>bin\Release\AngleSharp.Io.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AngleSharp, Version=0.9.7.86, Culture=neutral, PublicKeyToken=e83494dcdc6d31ea, processorArchitecture=MSIL">
+    <Reference Include="AngleSharp, Version=0.9.7.21214, Culture=neutral, PublicKeyToken=e83494dcdc6d31ea, processorArchitecture=MSIL">
       <HintPath>..\packages\AngleSharp.0.9.7\lib\net45\AngleSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
