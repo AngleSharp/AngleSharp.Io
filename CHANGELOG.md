@@ -1,3 +1,7 @@
+# 0.3.1
+
+- Adjusted to service changes
+
 # 0.3.0
 
 - Added a File requester (#11)
