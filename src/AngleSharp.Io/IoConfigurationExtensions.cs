@@ -19,7 +19,14 @@
         /// <returns>The new configuration.</returns>
         public static IConfiguration WithRequesters(this IConfiguration configuration, Action<ConfigurationExtensions.LoaderSetup> setup = null)
         {
-            var requesters = new IRequester[] { new HttpClientRequester(), new DataRequester(), new FtpRequester(), new FileRequester() };
+            var requesters = new IRequester[] 
+            {
+                new HttpClientRequester(),
+                new DataRequester(),
+                new FtpRequester(),
+                new FileRequester(),
+                new AboutRequester()
+            };
             return configuration.WithDefaultLoader(setup, requesters);
         }
 
@@ -35,7 +42,14 @@
         public static IConfiguration WithRequesters(this IConfiguration configuration, HttpMessageHandler httpMessageHandler, Action<ConfigurationExtensions.LoaderSetup> setup = null)
         {
             var httpClient = new HttpClient(httpMessageHandler);
-            var requesters = new IRequester[] { new HttpClientRequester(httpClient), new DataRequester(), new FtpRequester(), new FileRequester() };
+            var requesters = new IRequester[] 
+            {
+                new HttpClientRequester(httpClient),
+                new DataRequester(),
+                new FtpRequester(),
+                new FileRequester(),
+                new AboutRequester()
+            };
             return configuration.WithDefaultLoader(setup, requesters);
         }
     }
