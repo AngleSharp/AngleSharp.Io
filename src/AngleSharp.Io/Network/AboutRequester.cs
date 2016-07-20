@@ -78,6 +78,13 @@
 
             while (data.Length > skip && data[skip] == '/' && skip++ < 2) ;
 
+            var query = data.IndexOf('?');
+
+            if (query >= 0)
+            {
+                data = data.Remove(query);
+            }
+
             return data.Remove(0, skip);
         }
     }
