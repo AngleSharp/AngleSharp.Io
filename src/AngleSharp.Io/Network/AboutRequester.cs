@@ -18,7 +18,7 @@
         /// </summary>
         public AboutRequester()
         {
-            _routes = new Dictionary<String, Func<IRequest, CancellationToken, Task<IResponse>>>();
+            _routes = new Dictionary<String, Func<IRequest, CancellationToken, Task<IResponse>>>(StringComparer.InvariantCultureIgnoreCase);
         }
 
         /// <summary>
@@ -51,7 +51,8 @@
         /// <returns>The task that will eventually give the response data.</returns>
         public Task<IResponse> RequestAsync(IRequest request, CancellationToken cancel)
         {
-            var route = GetRoute(request.Address.Data);
+            var address = GetAddress(request.Address.Data);
+            var route = GetRoute(address);
 
             if (route != null)
             {
@@ -69,6 +70,15 @@
         public Boolean SupportsProtocol(String protocol)
         {
             return !String.IsNullOrEmpty(protocol) && protocol.Equals("about");
+        }
+
+        private static String GetAddress(String data)
+        {
+            var skip = 0;
+
+            while (data.Length > skip && data[skip] == '/' && skip++ < 2) ;
+
+            return data.Remove(0, skip);
         }
     }
 }
