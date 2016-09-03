@@ -6,6 +6,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
@@ -120,7 +121,21 @@
                 }
             }
 
+            if (IsRedirected(response) && !response.Headers.ContainsKey(HeaderNames.SetCookie))
+            {
+                response.Headers[HeaderNames.SetCookie] = String.Empty;
+            }
+
             return response;
+        }
+
+        private static Boolean IsRedirected(Response response)
+        {
+            var status = response.StatusCode;
+
+            return status == HttpStatusCode.Redirect || status == HttpStatusCode.RedirectKeepVerb ||
+                   status == HttpStatusCode.RedirectMethod || status == HttpStatusCode.TemporaryRedirect ||
+                   status == HttpStatusCode.MovedPermanently || status == HttpStatusCode.MultipleChoices;
         }
 
         #endregion

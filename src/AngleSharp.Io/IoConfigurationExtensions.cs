@@ -19,8 +19,7 @@
         /// <returns>The new configuration.</returns>
         public static IConfiguration WithRequesters(this IConfiguration configuration, Action<ConfigurationExtensions.LoaderSetup> setup = null)
         {
-            var requesters = new IRequester[] { new HttpClientRequester(), new DataRequester(), new FtpRequester(), new FileRequester() };
-            return configuration.WithDefaultLoader(setup, requesters);
+            return configuration.WithRequesters(new HttpClientHandler { UseCookies = false, AllowAutoRedirect = false }, setup);
         }
 
         /// <summary>

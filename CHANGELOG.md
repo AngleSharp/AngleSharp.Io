@@ -1,3 +1,8 @@
+# 0.3.2
+
+- Updated to latest version
+- Dispose WebSocket on unload
+
 # 0.3.1
 
 - Adjusted to service changes

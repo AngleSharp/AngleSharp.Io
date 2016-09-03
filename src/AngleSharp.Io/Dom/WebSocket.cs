@@ -3,6 +3,7 @@
     using AngleSharp.Attributes;
     using AngleSharp.Dom;
     using AngleSharp.Dom.Events;
+    using AngleSharp.Html;
     using AngleSharp.Io.Extensions;
     using System;
     using System.Linq;
@@ -20,13 +21,13 @@
     {
         #region Fields
 
-        const Int32 ReceiveChunkSize = 2048;
-        const Int32 SendChunkSize = 1024;
+        private const Int32 ReceiveChunkSize = 2048;
+        private const Int32 SendChunkSize = 1024;
 
-        readonly Url _url;
-        readonly CancellationTokenSource _cts;
-        readonly ClientWebSocket _ws;
-        readonly IWindow _window;
+        private readonly Url _url;
+        private readonly CancellationTokenSource _cts;
+        private readonly ClientWebSocket _ws;
+        private readonly IWindow _window;
 
         WebSocketReadyState _state;
 
@@ -34,10 +35,15 @@
 
         #region Event Names
 
-        static readonly String OpenEvent = "open";
-        static readonly String CloseEvent = "close";
-        static readonly String MessageEvent = "message";
-        static readonly String ErrorEvent = "error";
+        /// <summary>
+        /// The open event name.
+        /// </summary>
+        public static readonly String OpenEvent = "open";
+
+        /// <summary>
+        /// The close event name.
+        /// </summary>
+        public static readonly String CloseEvent = "close";
 
         #endregion
 
@@ -59,8 +65,8 @@
         [DomName("onmessage")]
         public event DomEventHandler Message
         {
-            add { AddEventListener(MessageEvent, value, false); }
-            remove { RemoveEventListener(MessageEvent, value, false); }
+            add { AddEventListener(EventNames.Message, value, false); }
+            remove { RemoveEventListener(EventNames.Message, value, false); }
         }
 
         /// <summary>
@@ -69,8 +75,8 @@
         [DomName("onerror")]
         public event DomEventHandler Error
         {
-            add { AddEventListener(ErrorEvent, value, false); }
-            remove { RemoveEventListener(ErrorEvent, value, false); }
+            add { AddEventListener(EventNames.Error, value, false); }
+            remove { RemoveEventListener(EventNames.Error, value, false); }
         }
 
         /// <summary>
@@ -122,22 +128,7 @@
 
             _ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
             ConnectAsync(url).Forget();
-        }
-
-        async Task ConnectAsync(String url)
-        {
-            try
-            {
-                await _ws.ConnectAsync(new Uri(url), _cts.Token).ConfigureAwait(false);
-                _state = WebSocketReadyState.Open;
-                OnConnected();
-                ListenAsync().Forget();
-            }
-            catch (Exception ex)
-            {
-                _state = WebSocketReadyState.Closed;
-                OnError(ex);
-            }
+            _window.Unloaded += OnUnload;
         }
 
         #endregion
@@ -225,7 +216,34 @@
 
         #region Helpers
 
-        static Boolean IsValid(String protocol)
+        private async Task ConnectAsync(String url)
+        {
+            try
+            {
+                await _ws.ConnectAsync(new Uri(url), _cts.Token).ConfigureAwait(false);
+                _state = WebSocketReadyState.Open;
+                OnConnected();
+                ListenAsync().Forget();
+            }
+            catch (Exception ex)
+            {
+                _state = WebSocketReadyState.Closed;
+                OnError(ex);
+            }
+        }
+
+        private void OnUnload(Object sender, Event ev)
+        {
+            RemoveEventListeners();
+
+            if (_state != WebSocketReadyState.Closed && _state != WebSocketReadyState.Closing)
+            {
+                CloseAsync().Wait();
+                _ws.Dispose();
+            }
+        }
+
+        private static Boolean IsValid(String protocol)
         {
             for (var i = 0; i < protocol.Length; i++)
             {
@@ -238,7 +256,7 @@
             return true;
         }
 
-        async Task SendAsync(String message)
+        private async Task SendAsync(String message)
         {
             var messageBuffer = Encoding.UTF8.GetBytes(message);
             var remainder = 0;
@@ -262,7 +280,7 @@
             }
         }
 
-        async Task CloseAsync()
+        private async Task CloseAsync()
         {
             _state = WebSocketReadyState.Closing;
             await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, String.Empty, _cts.Token).ConfigureAwait(false);
@@ -270,7 +288,7 @@
             OnDisconnected();
         }
 
-        async Task ListenAsync()
+        private async Task ListenAsync()
         {
             var buffer = new Byte[ReceiveChunkSize];
             var stringResult = new StringBuilder();
@@ -305,35 +323,35 @@
             }
         }
 
-        void CancelListener()
+        private void CancelListener()
         {
             _cts.Cancel();
             _ws.Abort();
             _state = WebSocketReadyState.Closed;
         }
 
-        void OnMessage(String message)
+        private void OnMessage(String message)
         {
             var evt = new MessageEvent();
-            evt.Init(MessageEvent, false, false, message, _url.Origin, String.Empty, _window);
+            evt.Init(EventNames.Message, false, false, message, _url.Origin, String.Empty, _window);
             this.Dispatch(evt);
         }
 
-        void OnError(Exception ex)
+        private void OnError(Exception ex)
         {
             var evt = new ErrorEvent();
-            evt.Init(ErrorEvent, false, false);
+            evt.Init(EventNames.Error, false, false);
             this.Dispatch(evt);
         }
 
-        void OnDisconnected()
+        private void OnDisconnected()
         {
             var evt = new Event();
             evt.Init(CloseEvent, false, false);
             this.Dispatch(evt);
         }
 
-        void OnConnected()
+        private void OnConnected()
         {
             var evt = new Event();
             evt.Init(OpenEvent, false, false);
