@@ -14,7 +14,7 @@
     <copyright>Copyright 2016, AngleSharp</copyright>
     <tags>html html5 css css3 dom requester http https io filesystem storage httpclient cache</tags>
     <dependencies> 
-      <dependency id="AngleSharp" version="0.9.7" />
+      <dependency id="AngleSharp" version="0.9.8" />
     </dependencies>
   </metadata>
 </package>
