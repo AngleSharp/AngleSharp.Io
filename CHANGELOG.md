@@ -2,6 +2,7 @@
 
 - Updated to latest version
 - Dispose WebSocket on unload
+- Added `about:` handler
 
 # 0.3.1
 

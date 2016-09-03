@@ -45,7 +45,7 @@
         /// <returns>True if the protocol is supported, otherwise false.</returns>
         public Boolean SupportsProtocol(String protocol)
         {
-            return !String.IsNullOrEmpty(protocol) && protocol.Equals(ProtocolNames.File);
+            return protocol.Equals(ProtocolNames.File, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
