@@ -14,7 +14,7 @@
     [TestFixture]
     public class FileRequesterTests
     {
-        static String GetLocalPath()
+        private static String GetLocalPath()
         {
             var directory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var path = Path.Combine(directory, "TestContent.txt");

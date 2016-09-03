@@ -1,6 +1,7 @@
 ﻿namespace AngleSharp.Io.Tests.Network.Mocks
 {
     using AngleSharp.Io.Network;
+    using AngleSharp.Network.Default;
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -8,7 +9,7 @@
     using System.Net.Http;
     using System.Text;
 
-    class HttpMockState
+    sealed class HttpMockState
     {
         public HttpMockState()
         {
@@ -22,23 +23,23 @@
                 Method = AngleSharp.Network.HttpMethod.Post,
                 Address = new Url("http://example/path?query=value"),
                 Headers = new Dictionary<String, String>
-                    {
-                        {"User-Agent", "Foo/2.0"},
-                        {"Cookie", "foo=bar"},
-                        {"Content-Type", "application/json"},
-                        {"Content-Length", "9"}
-                    },
+                {
+                    {"User-Agent", "Foo/2.0"},
+                    {"Cookie", "foo=bar"},
+                    {"Content-Type", "application/json"},
+                    {"Content-Length", "9"}
+                },
                 Content = new MemoryStream(Encoding.UTF8.GetBytes("\"request\""))
             };
             HttpResponseMessage = new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent("\"response\"", Encoding.UTF8, "application/json"),
                 Headers =
-                    {
-                        {"Server", "Fake"},
-                        {"X-Powered-By", "Magic"},
-                        {"X-CSV", new[] {"foo", "bar"}}
-                    }
+                {
+                    {"Server", "Fake"},
+                    {"X-Powered-By", "Magic"},
+                    {"X-CSV", new[] {"foo", "bar"}}
+                }
             };
 
             // setup

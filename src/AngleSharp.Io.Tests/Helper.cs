@@ -1,9 +1,8 @@
 ﻿namespace AngleSharp.Io.Tests
 {
-    using System;
-    using System.IO;
-    using System.Net.NetworkInformation;
     using NUnit.Framework;
+    using System;
+    using System.Net.NetworkInformation;
 
     /// <summary>
     /// Small (but quite useable) code to enable / disable some
@@ -11,7 +10,7 @@
     /// Taken from
     /// http://stackoverflow.com/questions/520347/c-sharp-how-do-i-check-for-a-network-connection
     /// </summary>
-    class Helper
+    static class Helper
     {
         /// <summary>
         /// Indicates whether any network connection is available
@@ -22,7 +21,9 @@
         public static Boolean IsNetworkAvailable()
         {
             if (IsNetworkAvailable(0))
+            {
                 return true;
+            }
 
             Assert.Inconclusive("No network has been detected. Test skipped.");
             return false;
@@ -36,32 +37,32 @@
         /// <returns>True if a network connection is available; otherwise false.</returns>
         public static Boolean IsNetworkAvailable(Int64 minimumSpeed)
         {
-            if (!NetworkInterface.GetIsNetworkAvailable())
-                return false;
-
-            foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+            if (NetworkInterface.GetIsNetworkAvailable())
             {
-                // discard because of standard reasons
-                if ((ni.OperationalStatus != OperationalStatus.Up) ||
-                    (ni.NetworkInterfaceType == NetworkInterfaceType.Loopback) ||
-                    (ni.NetworkInterfaceType == NetworkInterfaceType.Tunnel))
-                    continue;
+                foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    // discard because of standard reasons
+                    if ((ni.OperationalStatus != OperationalStatus.Up) ||
+                        (ni.NetworkInterfaceType == NetworkInterfaceType.Loopback) ||
+                        (ni.NetworkInterfaceType == NetworkInterfaceType.Tunnel))
+                        continue;
 
-                // this allow to filter modems, serial, etc.
-                // I use 10000000 as a minimum speed for most cases
-                if (ni.Speed < minimumSpeed)
-                    continue;
+                    // this allow to filter modems, serial, etc.
+                    // I use 10000000 as a minimum speed for most cases
+                    if (ni.Speed < minimumSpeed)
+                        continue;
 
-                // discard virtual cards (virtual box, virtual pc, etc.)
-                if ((ni.Description.IndexOf("virtual", StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (ni.Name.IndexOf("virtual", StringComparison.OrdinalIgnoreCase) >= 0))
-                    continue;
+                    // discard virtual cards (virtual box, virtual pc, etc.)
+                    if ((ni.Description.IndexOf("virtual", StringComparison.OrdinalIgnoreCase) >= 0) ||
+                        (ni.Name.IndexOf("virtual", StringComparison.OrdinalIgnoreCase) >= 0))
+                        continue;
 
-                // discard "Microsoft Loopback Adapter", it will not show as NetworkInterfaceType.Loopback but as Ethernet Card.
-                if (ni.Description.Equals("Microsoft Loopback Adapter", StringComparison.OrdinalIgnoreCase))
-                    continue;
+                    // discard "Microsoft Loopback Adapter", it will not show as NetworkInterfaceType.Loopback but as Ethernet Card.
+                    if (ni.Description.Equals("Microsoft Loopback Adapter", StringComparison.OrdinalIgnoreCase))
+                        continue;
 
-                return true;
+                    return true;
+                }
             }
 
             return false;
