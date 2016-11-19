@@ -1,6 +1,5 @@
-﻿namespace AngleSharp.Io.Extensions
+﻿namespace AngleSharp.Io
 {
-    using AngleSharp.Network;
     using System;
     using System.Threading.Tasks;
 

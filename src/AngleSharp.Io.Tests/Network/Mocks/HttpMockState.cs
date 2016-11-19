@@ -1,7 +1,6 @@
 ﻿namespace AngleSharp.Io.Tests.Network.Mocks
 {
     using AngleSharp.Io.Network;
-    using AngleSharp.Network.Default;
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -20,7 +19,7 @@
             // data
             Request = new Request
             {
-                Method = AngleSharp.Network.HttpMethod.Post,
+                Method = AngleSharp.Io.HttpMethod.Post,
                 Address = new Url("http://example/path?query=value"),
                 Headers = new Dictionary<String, String>
                 {

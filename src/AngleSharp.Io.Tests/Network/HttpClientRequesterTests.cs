@@ -1,9 +1,7 @@
 ﻿namespace AngleSharp.Io.Tests.Network
 {
-    using AngleSharp.Extensions;
     using AngleSharp.Io.Network;
     using AngleSharp.Io.Tests.Network.Mocks;
-    using AngleSharp.Network;
     using FluentAssertions;
     using NUnit.Framework;
     using System;
@@ -13,7 +11,7 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using AngleSharpHttpMethod = AngleSharp.Network.HttpMethod;
+    using AngleSharpHttpMethod = AngleSharp.Io.HttpMethod;
     using NetHttpMethod = System.Net.Http.HttpMethod;
 
     [TestFixture]
@@ -129,7 +127,7 @@
                 var request = DocumentRequest.Get(Url.Create("http://httpbin.org/html"));
 
                 // ACT
-                var response = await context.Loader.DownloadAsync(request).Task;
+                var response = await context.GetService<IDocumentLoader>().FetchAsync(request).Task;
                 var document = await context.OpenAsync(response, CancellationToken.None);
 
                 // ASSERT

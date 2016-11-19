@@ -1,9 +1,8 @@
 ﻿namespace AngleSharp.Io.Tests.Network
 {
-    using AngleSharp.Dom.Html;
-    using AngleSharp.Extensions;
+    using AngleSharp.Dom;
+    using AngleSharp.Html.Dom;
     using AngleSharp.Io.Network;
-    using AngleSharp.Network.Default;
     using NUnit.Framework;
     using System;
     using System.IO;

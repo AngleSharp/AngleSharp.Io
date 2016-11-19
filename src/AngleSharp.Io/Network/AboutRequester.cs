@@ -1,6 +1,5 @@
 ﻿namespace AngleSharp.Io.Network
 {
-    using AngleSharp.Network;
     using System;
     using System.Collections.Generic;
     using System.Threading;
@@ -9,16 +8,16 @@
     /// <summary>
     /// Requester to perform about:// requests.
     /// </summary>
-    public class AboutRequester : IRequester
+    public class AboutRequester : BaseRequester
     {
-        private readonly Dictionary<String, Func<IRequest, CancellationToken, Task<IResponse>>> _routes;
+        private readonly Dictionary<String, Func<Request, CancellationToken, Task<IResponse>>> _routes;
 
         /// <summary>
         /// Creates a new about requester.
         /// </summary>
         public AboutRequester()
         {
-            _routes = new Dictionary<String, Func<IRequest, CancellationToken, Task<IResponse>>>(StringComparer.InvariantCultureIgnoreCase);
+            _routes = new Dictionary<String, Func<Request, CancellationToken, Task<IResponse>>>(StringComparer.InvariantCultureIgnoreCase);
         }
 
         /// <summary>
@@ -26,7 +25,7 @@
         /// </summary>
         /// <param name="address">The address of the route.</param>
         /// <param name="route">The route to use.</param>
-        public void SetRoute(String address, Func<IRequest, CancellationToken, Task<IResponse>> route)
+        public void SetRoute(String address, Func<Request, CancellationToken, Task<IResponse>> route)
         {
             _routes[address] = route;
         }
@@ -36,9 +35,9 @@
         /// </summary>
         /// <param name="address">The address of the route to obtain.</param>
         /// <returns>The route, if any.</returns>
-        public Func<IRequest, CancellationToken, Task<IResponse>> GetRoute(String address)
+        public Func<Request, CancellationToken, Task<IResponse>> GetRoute(String address)
         {
-            var route = default(Func<IRequest, CancellationToken, Task<IResponse>>);
+            var route = default(Func<Request, CancellationToken, Task<IResponse>>);
             _routes.TryGetValue(address, out route);
             return route;
         }
@@ -49,7 +48,7 @@
         /// <param name="request">The options to consider.</param>
         /// <param name="cancel">The token for cancelling the task.</param>
         /// <returns>The task that will eventually give the response data.</returns>
-        public Task<IResponse> RequestAsync(IRequest request, CancellationToken cancel)
+        protected override Task<IResponse> PerformRequestAsync(Request request, CancellationToken cancel)
         {
             var address = GetAddress(request.Address.Data);
             var route = GetRoute(address);
@@ -67,7 +66,7 @@
         /// </summary>
         /// <param name="protocol">The protocol to check for, e.g. file.</param>
         /// <returns>True if the protocol is supported, otherwise false.</returns>
-        public Boolean SupportsProtocol(String protocol)
+        public override Boolean SupportsProtocol(String protocol)
         {
             return protocol.Equals("about", StringComparison.OrdinalIgnoreCase);
         }

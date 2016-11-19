@@ -1,15 +1,14 @@
-﻿namespace AngleSharp
+﻿namespace AngleSharp.Io
 {
     using AngleSharp.Io.Network;
-    using AngleSharp.Network;
-    using AngleSharp.Network.Default;
     using System;
     using System.Net.Http;
+    using LoaderSetup = AngleSharp.ConfigurationExtensions.LoaderSetup;
 
     /// <summary>
     /// Additional extensions for improved requesters.
     /// </summary>
-    public static class IoConfigurationExtensions
+    public static class ConfigurationExtensions
     {
         /// <summary>
         /// Adds a loader service that comes with all (improved) requesters.
@@ -17,7 +16,7 @@
         /// <param name="configuration">The configuration to use.</param>
         /// <param name="setup">Optional setup for the loader service.</param>
         /// <returns>The new configuration.</returns>
-        public static IConfiguration WithRequesters(this IConfiguration configuration, Action<ConfigurationExtensions.LoaderSetup> setup = null)
+        public static IConfiguration WithRequesters(this IConfiguration configuration, Action<LoaderSetup> setup = null)
         {
             return configuration.WithRequesters(new HttpClientHandler { UseCookies = false, AllowAutoRedirect = false }, setup);
         }
@@ -31,7 +30,7 @@
         /// </param>
         /// <param name="setup">Optional setup for the loader service.</param>
         /// <returns>The new configuration.</returns>
-        public static IConfiguration WithRequesters(this IConfiguration configuration, HttpMessageHandler httpMessageHandler, Action<ConfigurationExtensions.LoaderSetup> setup = null)
+        public static IConfiguration WithRequesters(this IConfiguration configuration, HttpMessageHandler httpMessageHandler, Action<LoaderSetup> setup = null)
         {
             var httpClient = new HttpClient(httpMessageHandler);
             var requesters = new IRequester[] 

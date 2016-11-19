@@ -1,8 +1,6 @@
 ﻿namespace AngleSharp.Io.Tests.Network
 {
-    using AngleSharp.Network;
-    using AngleSharp.Network.Default;
-    using Io.Network;
+    using AngleSharp.Io.Network;
     using NUnit.Framework;
     using System.Collections.Generic;
     using System.Threading;
@@ -15,7 +13,7 @@
         public async Task InvokeAboutSettingsLowercaseShouldWorkFine()
         {
             var about = new AboutRequester();
-            var requests = new List<IRequest>();
+            var requests = new List<Request>();
             var req = new Request
             {
                 Address = Url.Create("about://settings"),
@@ -37,7 +35,7 @@
         public async Task InvokeAboutSettingsUppercaseShouldWorkFine()
         {
             var about = new AboutRequester();
-            var requests = new List<IRequest>();
+            var requests = new List<Request>();
             var req = new Request
             {
                 Address = Url.Create("about://Settings"),
@@ -59,7 +57,7 @@
         public async Task InvokeAboutUnsetUrlShouldNotFire()
         {
             var about = new AboutRequester();
-            var requests = new List<IRequest>();
+            var requests = new List<Request>();
             var req = new Request
             {
                 Address = Url.Create("about://bookmarks"),
@@ -81,7 +79,7 @@
         public async Task InvokeAboutUrlWithQueryShouldFire()
         {
             var about = new AboutRequester();
-            var requests = new List<IRequest>();
+            var requests = new List<Request>();
             var req = new Request
             {
                 Address = Url.Create("about://cache?device=memory"),
