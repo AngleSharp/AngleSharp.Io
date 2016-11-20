@@ -1,5 +1,6 @@
-﻿namespace AngleSharp.Io
+﻿namespace AngleSharp
 {
+    using AngleSharp.Io;
     using AngleSharp.Io.Network;
     using System;
     using System.Net.Http;
@@ -8,7 +9,7 @@
     /// <summary>
     /// Additional extensions for improved requesters.
     /// </summary>
-    public static class ConfigurationExtensions
+    public static class IoConfigurationExtensions
     {
         /// <summary>
         /// Adds a loader service that comes with all (improved) requesters.

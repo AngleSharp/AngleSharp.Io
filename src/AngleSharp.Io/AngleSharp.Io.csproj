@@ -47,7 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConfigurationExtensions.cs" />
+    <Compile Include="IoConfigurationExtensions.cs" />
     <Compile Include="Dom\WebSocketReadyState.cs" />
     <Compile Include="GeneralExtensions.cs" />
     <Compile Include="Dom\WebSocket.cs" />
