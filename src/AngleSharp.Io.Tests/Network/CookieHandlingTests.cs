@@ -13,7 +13,7 @@
             if (Helper.IsNetworkAvailable())
             {
                 var url = "https://httpbin.org/cookies/set?k1=v1";
-                var config = Configuration.Default.WithCookies().WithRequesters();
+                var config = Configuration.Default.WithCookies().WithRequesters().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 var document = await context.OpenAsync(url);
 
@@ -27,7 +27,7 @@
             if (Helper.IsNetworkAvailable())
             {
                 var url = "https://httpbin.org/cookies/set?k2=v2&k1=v1";
-                var config = Configuration.Default.WithCookies().WithRequesters();
+                var config = Configuration.Default.WithCookies().WithRequesters().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 var document = await context.OpenAsync(url);
 
@@ -41,7 +41,7 @@
             if (Helper.IsNetworkAvailable())
             {
                 var url = "https://httpbin.org/cookies/set?test=baz&k2=v2&k1=v1&foo=bar";
-                var config = Configuration.Default.WithCookies().WithRequesters();
+                var config = Configuration.Default.WithCookies().WithRequesters().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 var document = await context.OpenAsync(url);
 
@@ -56,7 +56,7 @@
             {
                 var baseUrl = "https://httpbin.org/cookies";
                 var url = baseUrl + "/set?test=baz&k2=v2&k1=v1&foo=bar";
-                var config = Configuration.Default.WithCookies().WithRequesters();
+                var config = Configuration.Default.WithCookies().WithRequesters().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 await context.OpenAsync(url);
                 var document = await context.OpenAsync(baseUrl);
@@ -80,7 +80,7 @@
             {
                 var cookieUrl = "https://httpbin.org/cookies/set?test=baz";
                 var redirectUrl = "http://httpbin.org/redirect-to?url=http%3A%2F%2Fhttpbin.org%2Fcookies";
-                var config = Configuration.Default.WithCookies().WithRequesters();
+                var config = Configuration.Default.WithCookies().WithRequesters().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 await context.OpenAsync(cookieUrl);
                 var document = await context.OpenAsync(redirectUrl);

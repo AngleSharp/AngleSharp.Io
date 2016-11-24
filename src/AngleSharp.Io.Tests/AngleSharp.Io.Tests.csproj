@@ -74,8 +74,10 @@
   <ItemGroup>
     <Compile Include="DisposableStream.cs" />
     <Compile Include="Helper.cs" />
+    <Compile Include="Integration\DocumentTests.cs" />
     <Compile Include="Network\CookieHandlingTests.cs" />
     <Compile Include="Network\AboutTests.cs" />
+    <Compile Include="Network\DataRequesterTests.cs" />
     <Compile Include="Network\FileRequesterTests.cs" />
     <Compile Include="Network\FtpRequesterTests.cs" />
     <Compile Include="Network\HttpClientRequesterTests.cs" />

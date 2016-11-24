@@ -122,7 +122,7 @@
                 // ARRANGE
                 var httpClient = new HttpClient();
                 var requester = new HttpClientRequester(httpClient);
-                var configuration = Configuration.Default.WithDefaultLoader(requesters: new[] { requester });
+                var configuration = Configuration.Default.With(requester).WithDefaultLoader();
                 var context = BrowsingContext.New(configuration);
                 var request = DocumentRequest.Get(Url.Create("http://httpbin.org/html"));
 

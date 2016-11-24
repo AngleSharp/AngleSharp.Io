@@ -53,6 +53,7 @@
     <Compile Include="Dom\WebSocket.cs" />
     <Compile Include="Interfaces\IStorage.cs" />
     <Compile Include="Network\AboutRequester.cs" />
+    <Compile Include="Network\DataRequester.cs" />
     <Compile Include="Network\FileRequester.cs" />
     <Compile Include="Network\FtpRequester.cs" />
     <Compile Include="Network\HttpClientRequester.cs" />

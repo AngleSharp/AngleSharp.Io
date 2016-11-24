@@ -28,7 +28,7 @@
         [Test]
         public async Task FollowLinkToUseFtpRequesterUsingAllRequesters()
         {
-            var config = Configuration.Default.WithRequesters();
+            var config = Configuration.Default.WithRequesters().WithDefaultLoader();
             var context = BrowsingContext.New(config);
             var document = await context.OpenAsync(res => res.Content("<a href='ftp://ftp.funet.fi/pub/standards/RFC/rfc959.txt'>Download</a>"));
             var result = await document.QuerySelector<IHtmlAnchorElement>("a").NavigateAsync();
