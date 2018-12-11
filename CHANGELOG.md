@@ -1,4 +1,12 @@
+# 0.10.0
+
+Planned for Monday, December 24 2018.
+
+- Updated to fit the latest version of AngleSharp
+
 # 0.3.2
+
+Released on Saturday, September 3 2016.
 
 - Updated to latest version
 - Dispose WebSocket on unload
@@ -6,19 +14,27 @@
 
 # 0.3.1
 
+Released on Sunday, July 17 2016.
+
 - Adjusted to service changes
 
 # 0.3.0
+
+Released on Friday, May 6 2016.
 
 - Added a File requester (#11)
 - Added a FTP requester (#10)
 
 # 0.2.0
 
+Released on Tuesday, January 5 2016.
+
 - Fixed compatibility bug (#7)
 - Added WebSocket interface (#5)
 - `IRequester` flexibility (#1)
 
 # 0.1.0
+
+Released on Sunday, October 18 2015.
 
 - Initial release (#4, #3)

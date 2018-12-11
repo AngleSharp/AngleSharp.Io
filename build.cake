@@ -51,57 +51,54 @@ Task("Restore-Packages")
     .IsDependentOn("Clean")
     .Does(() =>
     {
-        NuGetRestore("./src/AngleSharp.Io.sln");
+        NuGetRestore("./src/AngleSharp.Io.sln", new NuGetRestoreSettings {
+            ToolPath = "tools/nuget.exe"
+        });
     });
 
 Task("Build")
     .IsDependentOn("Restore-Packages")
     .Does(() =>
     {
-        if (isRunningOnWindows)
-        {
-            MSBuild("./src/AngleSharp.Io.sln", new MSBuildSettings()
-                .SetConfiguration(configuration)
-                .SetVerbosity(Verbosity.Minimal)
-            );
-        }
-        else
-        {
-            XBuild("./src/AngleSharp.Io.sln", new XBuildSettings()
-                .SetConfiguration(configuration)
-                .SetVerbosity(Verbosity.Minimal)
-            );
-        }
+        DotNetCoreBuild("./src/AngleSharp.Io.sln", new DotNetCoreBuildSettings() {
+           Configuration = configuration
+        });
     });
 
 Task("Run-Unit-Tests")
     .IsDependentOn("Build")
     .Does(() =>
     {
-        var settings = new NUnit3Settings
+        var settings = new DotNetCoreTestSettings
         {
-            Work = buildResultDir.Path.FullPath
+            Configuration = configuration
         };
 
         if (isRunningOnAppVeyor)
         {
-            settings.Where = "cat != ExcludeFromAppVeyor";
+            settings.TestAdapterPath = Directory(".");
+            settings.Logger = "Appveyor";
+            // TODO Finds a way to exclude tests not allowed to run on appveyor
+            // Not used in current code
+            //settings.Where = "cat != ExcludeFromAppVeyor";
         }
 
-        NUnit3("./src/**/bin/" + configuration + "/*.Tests.dll", settings);
+        DotNetCoreTest("./src/AngleSharp.Io.Tests/", settings);
     });
 
 Task("Copy-Files")
     .IsDependentOn("Build")
     .Does(() =>
     {
-        var target = nugetRoot + Directory("lib") + Directory("net45");
+        var target = nugetRoot + Directory("lib") + Directory("net46");
+
         CreateDirectory(target);
         CopyFiles(new FilePath[]
-        { 
+        {
             buildDir + File("AngleSharp.Io.dll"),
             buildDir + File("AngleSharp.Io.xml")
         }, target);
+
         CopyFiles(new FilePath[] { "src/AngleSharp.Io.nuspec" }, nugetRoot);
     });
 
@@ -113,12 +110,12 @@ Task("Create-Package")
             ?? (isRunningOnAppVeyor ? GetFiles("C:\\Tools\\NuGet3\\nuget.exe").FirstOrDefault() : null);
 
         if (nugetExe == null)
-        {            
+        {
             throw new InvalidOperationException("Could not find nuget.exe.");
         }
-        
+
         var nuspec = nugetRoot + File("AngleSharp.Io.nuspec");
-        
+
         NuGetPack(nuspec, new NuGetPackSettings
         {
             Version = version,
@@ -127,7 +124,7 @@ Task("Create-Package")
             Properties = new Dictionary<String, String> { { "Configuration", configuration } }
         });
     });
-    
+
 Task("Publish-Package")
     .IsDependentOn("Create-Package")
     .WithCriteria(() => isLocal)
@@ -142,14 +139,14 @@ Task("Publish-Package")
 
         foreach (var nupkg in GetFiles(nugetRoot.Path.FullPath + "/*.nupkg"))
         {
-            NuGetPush(nupkg, new NuGetPushSettings 
-            { 
+            NuGetPush(nupkg, new NuGetPushSettings
+            {
                 Source = "https://nuget.org/api/v2/package",
-                ApiKey = apiKey 
+                ApiKey = apiKey
             });
         }
     });
-    
+
 Task("Publish-Release")
     .IsDependentOn("Publish-Package")
     .WithCriteria(() => isLocal)
@@ -176,28 +173,29 @@ Task("Publish-Release")
             TargetCommitish = "master"
         }).Wait();
     });
-    
+
 Task("Update-AppVeyor-Build-Number")
     .WithCriteria(() => isRunningOnAppVeyor)
     .Does(() =>
     {
-        AppVeyor.UpdateBuildVersion(version);
+        var num = AppVeyor.Environment.Build.Number;
+        AppVeyor.UpdateBuildVersion($"{version}-{num}");
     });
-    
+
 // Targets
 // ----------------------------------------
-    
+
 Task("Package")
     .IsDependentOn("Run-Unit-Tests")
     .IsDependentOn("Create-Package");
 
 Task("Default")
-    .IsDependentOn("Package");    
+    .IsDependentOn("Package");
 
 Task("Publish")
     .IsDependentOn("Publish-Package")
     .IsDependentOn("Publish-Release");
-    
+
 Task("AppVeyor")
     .IsDependentOn("Run-Unit-Tests")
     .IsDependentOn("Update-AppVeyor-Build-Number");
