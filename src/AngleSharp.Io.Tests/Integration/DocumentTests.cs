@@ -1,4 +1,4 @@
-﻿namespace AngleSharp.Io.Tests.Integration
+namespace AngleSharp.Io.Tests.Integration
 {
     using AngleSharp.Dom;
     using AngleSharp.Html.Dom;
@@ -12,7 +12,10 @@
         [Test]
         public async Task IframeWithDocumentViaDataSrc()
         {
-            var cfg = Configuration.Default.WithRequesters().WithDefaultLoader(setup => setup.IsResourceLoadingEnabled = true);
+            var cfg = Configuration.Default.WithRequesters().WithDefaultLoader(new LoaderOptions
+            {
+                IsResourceLoadingEnabled = true
+            });
             var html = @"<!doctype html><iframe id=myframe src='data:text/html,<span>Hello World!</span>'></iframe></script>";
             var document = await BrowsingContext.New(cfg).OpenAsync(m => m.Content(html));
             var iframe = document.QuerySelector<IHtmlInlineFrameElement>("#myframe");
@@ -25,14 +28,14 @@
         public async Task ImportPageFromDataRequest()
         {
             var receivedRequest = new TaskCompletionSource<Boolean>();
-            var config = Configuration.Default.WithRequesters().WithDefaultLoader(setup =>
+            var config = Configuration.Default.WithRequesters().WithDefaultLoader(new LoaderOptions
             {
-                setup.IsResourceLoadingEnabled = true;
-                setup.Filter = request =>
+                IsResourceLoadingEnabled = true,
+                Filter = request =>
                 {
                     receivedRequest.SetResult(true);
                     return true;
-                };
+                },
             });
 
             var document = await BrowsingContext.New(config).OpenAsync(m => m.Content("<!doctype html><link rel=import href='data:text/html,<div>foo</div>'>"));

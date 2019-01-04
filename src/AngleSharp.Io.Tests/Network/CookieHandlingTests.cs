@@ -1,4 +1,4 @@
-﻿namespace AngleSharp.Io.Tests.Network
+namespace AngleSharp.Io.Tests.Network
 {
     using NUnit.Framework;
     using System;
@@ -79,7 +79,7 @@
             if (Helper.IsNetworkAvailable())
             {
                 var cookieUrl = "https://httpbin.org/cookies/set?test=baz";
-                var redirectUrl = "http://httpbin.org/redirect-to?url=http%3A%2F%2Fhttpbin.org%2Fcookies";
+                var redirectUrl = "https://httpbin.org/redirect-to?url=https%3A%2F%2Fhttpbin.org%2Fcookies";
                 var config = Configuration.Default.WithCookies().WithRequesters().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 await context.OpenAsync(cookieUrl);
@@ -89,6 +89,25 @@
   ""cookies"": {
     ""test"": ""baz""
   }
+}
+".Replace(Environment.NewLine, "\n"), document.Body.TextContent);
+            }
+        }
+
+        [Test]
+        public async Task SettingCookieIsNotPreservedViaRedirectToDifferentProtocol()
+        {
+            if (Helper.IsNetworkAvailable())
+            {
+                var cookieUrl = "https://httpbin.org/cookies/set?test=baz";
+                var redirectUrl = "http://httpbin.org/redirect-to?url=http%3A%2F%2Fhttpbin.org%2Fcookies";
+                var config = Configuration.Default.WithCookies().WithRequesters().WithDefaultLoader();
+                var context = BrowsingContext.New(config);
+                await context.OpenAsync(cookieUrl);
+                var document = await context.OpenAsync(redirectUrl);
+
+                Assert.AreEqual(@"{
+  ""cookies"": {}
 }
 ".Replace(Environment.NewLine, "\n"), document.Body.TextContent);
             }

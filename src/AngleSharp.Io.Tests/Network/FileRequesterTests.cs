@@ -1,4 +1,4 @@
-﻿namespace AngleSharp.Io.Tests.Network
+namespace AngleSharp.Io.Tests.Network
 {
     using AngleSharp.Dom;
     using AngleSharp.Html.Dom;
