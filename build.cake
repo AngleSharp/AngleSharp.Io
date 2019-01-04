@@ -31,7 +31,7 @@ var nugetRoot = buildResultDir + Directory("nuget");
 // Initialization
 // ----------------------------------------
 
-Setup(() =>
+Setup(_ =>
 {
     Information("Building version {0} of AngleSharp.Io.", version);
     Information("For the publish target the following environment variables need to be set:");
@@ -90,13 +90,14 @@ Task("Copy-Files")
     .IsDependentOn("Build")
     .Does(() =>
     {
-        var target = nugetRoot + Directory("lib") + Directory("net46");
+        var framework = "netstandard2.0";
+        var target = nugetRoot + Directory("lib") + Directory(framework);
 
         CreateDirectory(target);
         CopyFiles(new FilePath[]
         {
-            buildDir + File("AngleSharp.Io.dll"),
-            buildDir + File("AngleSharp.Io.xml")
+            buildDir + Directory(framework) + File("AngleSharp.Io.dll"),
+            buildDir + Directory(framework) + File("AngleSharp.Io.xml")
         }, target);
 
         CopyFiles(new FilePath[] { "src/AngleSharp.Io.nuspec" }, nugetRoot);
