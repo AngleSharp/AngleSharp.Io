@@ -18,7 +18,7 @@ If you just want to use *all* available requesters provided by AngleSharp.Io you
 ```cs
 var config = Configuration.Default
     .WithRequesters() // from AngleSharp.Io
-    .WithDefaultLoader() // from AngleSharp;
+    .WithDefaultLoader(); // from AngleSharp
 ```
 
 This will register all requesters. Alternatively, the requesters can be provided explicitly. They are located in the `AngleSharp.Io.Network` namespace and have names such as `DataRequester`.
@@ -33,6 +33,12 @@ This will register all requesters. Alternatively, the requesters can be provided
   - Enhanced support for about: URLs
 - WebSockets (mostly interesting for scripting engines, e.g., JS)
 - Storage support by providing the `IStorage` interface
+
+## Participating
+
+Participation in the project is highly welcome. For this project the same rules as for the AngleSharp core project may be applied.
+
+If you have any question, concern, or spot an issue then please report it before opening a pull request. An initial discussion is appreciated regardless of the nature of the problem.
 
 ## License
 
