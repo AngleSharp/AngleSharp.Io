@@ -9,9 +9,30 @@
 [![StackOverflow Questions](https://img.shields.io/stackexchange/stackoverflow/t/anglesharp.svg?style=flat-square)](https://stackoverflow.com/tags/anglesharp)
 [![CLA Assistant](https://cla-assistant.io/readme/badge/AngleSharp/AngleSharp.Io?style=flat-square)](https://cla-assistant.io/AngleSharp/AngleSharp.Io)
 
-AngleSharp.Io extends AngleSharp with powerful requesters, caching mechanisms, and storage systems. It is coupled more strongly to the underlying operating system than AngleSharp itself. Therefore it has stronger dependencies and demands and cannot be released as a PCL.
+AngleSharp.Io extends AngleSharp with powerful requesters, caching mechanisms, and storage systems. It is coupled more strongly to the underlying operating system than AngleSharp itself. Therefore it has stronger dependencies and demands and cannot be released for the standard framework (4.6). Nevertheless, it is released as a .NET Standard 2.0 library.
 
-**Status** Currently in experimental stage.
+## Basic Configuration
+
+If you just want to use *all* available requesters provided by AngleSharp.Io you can do the following:
+
+```cs
+var config = Configuration.Default
+    .WithRequesters() // from AngleSharp.Io
+    .WithDefaultLoader() // from AngleSharp;
+```
+
+This will register all requesters. Alternatively, the requesters can be provided explicitly. They are located in the `AngleSharp.Io.Network` namespace and have names such as `DataRequester`.
+
+## Features
+
+- New requesters
+  - HTTP (using `HttpClient`)
+  - FTP
+  - Supporting data URLs
+  - Supporting file URLs
+  - Enhanced support for about: URLs
+- WebSockets (mostly interesting for scripting engines, e.g., JS)
+- Storage support by providing the `IStorage` interface
 
 ## License
 

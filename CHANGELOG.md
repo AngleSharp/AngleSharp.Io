@@ -1,6 +1,6 @@
 # 0.10.0
 
-Planned for Monday, December 24 2018.
+Released on Friday, January 4 2019.
 
 - Updated to fit the latest version of AngleSharp
 
