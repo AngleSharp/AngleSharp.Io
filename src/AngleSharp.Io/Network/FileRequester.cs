@@ -1,7 +1,5 @@
 ﻿namespace AngleSharp.Io.Network
 {
-    using AngleSharp.Network;
-    using AngleSharp.Network.Default;
     using System;
     using System.Net;
     using System.Threading;
@@ -10,7 +8,7 @@
     /// <summary>
     /// Requester to perform file:// requests.
     /// </summary>
-    public class FileRequester : IRequester
+    public class FileRequester : BaseRequester
     {
         /// <summary>
         /// Performs an asynchronous request that can be cancelled.
@@ -18,7 +16,7 @@
         /// <param name="request">The options to consider.</param>
         /// <param name="cancel">The token for cancelling the task.</param>
         /// <returns>The task that will eventually give the response data.</returns>
-        public async Task<IResponse> RequestAsync(IRequest request, CancellationToken cancel)
+        protected override async Task<IResponse> PerformRequestAsync(Request request, CancellationToken cancel)
         {
             var requester = FileWebRequest.Create(request.Address.Href) as FileWebRequest;
 
@@ -27,7 +25,7 @@
                 var response = await requester.GetResponseAsync().ConfigureAwait(false);
                 var content = response.GetResponseStream();
 
-                return new Response
+                return new DefaultResponse
                 {
                     Address = request.Address,
                     Content = content,
@@ -43,7 +41,7 @@
         /// </summary>
         /// <param name="protocol">The protocol to check for, e.g. file.</param>
         /// <returns>True if the protocol is supported, otherwise false.</returns>
-        public Boolean SupportsProtocol(String protocol)
+        public override Boolean SupportsProtocol(String protocol)
         {
             return protocol.Equals(ProtocolNames.File, StringComparison.OrdinalIgnoreCase);
         }

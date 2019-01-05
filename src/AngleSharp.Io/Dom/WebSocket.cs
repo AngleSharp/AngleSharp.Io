@@ -3,8 +3,6 @@
     using AngleSharp.Attributes;
     using AngleSharp.Dom;
     using AngleSharp.Dom.Events;
-    using AngleSharp.Html;
-    using AngleSharp.Io.Extensions;
     using System;
     using System.Linq;
     using System.Net.WebSockets;
@@ -29,7 +27,7 @@
         private readonly ClientWebSocket _ws;
         private readonly IWindow _window;
 
-        WebSocketReadyState _state;
+        private WebSocketReadyState _state;
 
         #endregion
 

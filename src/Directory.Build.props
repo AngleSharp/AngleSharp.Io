@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <Description>Providers additional requesters and IO helpers for AngleSharp.</Description>
+    <Product>AngleSharp.Io</Product>
+    <Version>0.10.0</Version>
+  </PropertyGroup>
+</Project>

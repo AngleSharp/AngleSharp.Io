@@ -1,6 +1,5 @@
 ﻿namespace AngleSharp.Io.Tests.Network
 {
-    using AngleSharp.Network.Default;
     using FluentAssertions;
     using NUnit.Framework;
     using System.Net;
@@ -12,7 +11,7 @@
         public void Initialize()
         {
             // ARRANGE, ACT
-            var response = new Response();
+            var response = new DefaultResponse();
 
             // ASSERT
             response.Content.Should().BeNull();

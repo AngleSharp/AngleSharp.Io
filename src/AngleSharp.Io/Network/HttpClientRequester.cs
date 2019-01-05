@@ -1,8 +1,5 @@
 ﻿namespace AngleSharp.Io.Network
 {
-    using AngleSharp.Io.Extensions;
-    using AngleSharp.Network;
-    using AngleSharp.Network.Default;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -15,11 +12,11 @@
     /// <summary>
     /// An HTTP requester based on <see cref="HttpClient"/>.
     /// </summary>
-    public class HttpClientRequester : IRequester
+    public class HttpClientRequester : BaseRequester
     {
         #region Fields
 
-        readonly HttpClient _client;
+        private readonly HttpClient _client;
 
         #endregion
 
@@ -55,7 +52,7 @@
         /// <returns>
         /// True if the protocol is supported, otherwise false.
         /// </returns>
-        public Boolean SupportsProtocol(String protocol)
+        public override Boolean SupportsProtocol(String protocol)
         {
             return protocol.Equals(ProtocolNames.Http, StringComparison.OrdinalIgnoreCase) ||
                    protocol.Equals(ProtocolNames.Https, StringComparison.OrdinalIgnoreCase);
@@ -69,7 +66,7 @@
         /// <returns>
         /// The task that will eventually give the response data.
         /// </returns>
-        public async Task<IResponse> RequestAsync(IRequest request, CancellationToken cancel)
+        protected override async Task<IResponse> PerformRequestAsync(Request request, CancellationToken cancel)
         {
             // create the request message
             var method = new HttpMethod(request.Method.Stringify());
@@ -101,7 +98,7 @@
             var responseMessage = await _client.SendAsync(requestMessage, cancel).ConfigureAwait(false);
 
             // convert the response
-            var response = new Response
+            var response = new DefaultResponse
             {
                 Headers = responseMessage.Headers.ToDictionary(p => p.Key, p => String.Join(", ", p.Value)),
                 Address = Url.Convert(responseMessage.RequestMessage.RequestUri),
@@ -129,7 +126,7 @@
             return response;
         }
 
-        private static Boolean IsRedirected(Response response)
+        private static Boolean IsRedirected(IResponse response)
         {
             var status = response.StatusCode;
 

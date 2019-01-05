@@ -1,9 +1,8 @@
-﻿namespace AngleSharp.Io.Tests.Network
+namespace AngleSharp.Io.Tests.Network
 {
-    using AngleSharp.Dom.Html;
-    using AngleSharp.Extensions;
+    using AngleSharp.Dom;
+    using AngleSharp.Html.Dom;
     using AngleSharp.Io.Network;
-    using AngleSharp.Network.Default;
     using NUnit.Framework;
     using System;
     using System.IO;
@@ -40,7 +39,7 @@
         public async Task FollowLinkToUseFileRequesterUsingAllRequesters()
         {
             var url = GetLocalPath();
-            var config = Configuration.Default.WithRequesters();
+            var config = Configuration.Default.WithRequesters().WithDefaultLoader();
             var context = BrowsingContext.New(config);
             var document = await context.OpenAsync(res => res.Content("<a href='" + url + "'>Download</a>"));
             var result = await document.QuerySelector<IHtmlAnchorElement>("a").NavigateAsync();
