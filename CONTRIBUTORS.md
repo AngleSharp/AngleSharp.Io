@@ -1,6 +1,6 @@
 # AngleSharp.Io Contributors
 
-Thanks :heart: to all who contributed to AngleSharp.Css via issues, pull requests, suggestions, and questions.
+Thanks :heart: to all who contributed to AngleSharp.Io via issues, pull requests, suggestions, and questions.
 
 AngleSharp.Io contains code written by (in order of first pull request / commit):
 
