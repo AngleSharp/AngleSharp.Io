@@ -16,7 +16,6 @@ using Octokit;
 
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
-var isLocal = BuildSystem.IsLocalBuild;
 var isRunningOnUnix = IsRunningOnUnix();
 var isRunningOnWindows = IsRunningOnWindows();
 var isRunningOnAppVeyor = AppVeyor.IsRunningOnAppVeyor;
@@ -128,7 +127,6 @@ Task("Create-Package")
 
 Task("Publish-Package")
     .IsDependentOn("Create-Package")
-    .WithCriteria(() => isLocal)
     .Does(() =>
     {
         var apiKey = EnvironmentVariable("NUGET_API_KEY");
@@ -150,7 +148,6 @@ Task("Publish-Package")
 
 Task("Publish-Release")
     .IsDependentOn("Publish-Package")
-    .WithCriteria(() => isLocal)
     .Does(() =>
     {
         var githubToken = EnvironmentVariable("GITHUB_API_TOKEN");
