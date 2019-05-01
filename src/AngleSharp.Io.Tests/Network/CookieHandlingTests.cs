@@ -95,7 +95,7 @@ namespace AngleSharp.Io.Tests.Network
         }
 
         [Test]
-        public async Task SettingCookieIsNotPreservedViaRedirectToDifferentProtocol()
+        public async Task SettingCookieIsPreservedViaRedirectToDifferentProtocol()
         {
             if (Helper.IsNetworkAvailable())
             {
@@ -107,7 +107,9 @@ namespace AngleSharp.Io.Tests.Network
                 var document = await context.OpenAsync(redirectUrl);
 
                 Assert.AreEqual(@"{
-  ""cookies"": {}
+  ""cookies"": {
+    ""test"": ""baz""
+  }
 }
 ".Replace(Environment.NewLine, "\n"), document.Body.TextContent);
             }

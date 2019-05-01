@@ -5,6 +5,7 @@ Released on Thursday, May 2 2019.
 - Reference latest AngleSharp
 - Added `InputFile` class as a standard `IFile` implementation
 - Added `AppendFile` extensions for `IHtmlInputElement`
+- Added ability for binary data restore on assets (#19)
 
 # 0.10.1
 
