@@ -5,25 +5,13 @@
 
     sealed class DisposableStream : Stream
     {
-        public override Boolean CanRead
-        {
-            get { return false; }
-        }
+        public override Boolean CanRead => false;
 
-        public override Boolean CanSeek
-        {
-            get { return false; }
-        }
+        public override Boolean CanSeek => false;
 
-        public override Boolean CanWrite
-        {
-            get { return false; }
-        }
+        public override Boolean CanWrite => false;
 
-        public override Int64 Length
-        {
-            get { return 0; }
-        }
+        public override Int64 Length => 0;
 
         public override Int64 Position
         {

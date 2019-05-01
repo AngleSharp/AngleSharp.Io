@@ -137,19 +137,13 @@
         /// Gets the URL the connection is made to.
         /// </summary>
         [DomName("url")]
-        public String Url
-        {
-            get { return _url.Href; }
-        }
+        public String Url => _url.Href;
 
         /// <summary>
         /// Gets the current state of the connection.
         /// </summary>
         [DomName("readyState")]
-        public WebSocketReadyState ReadyState
-        {
-            get { return _state; }
-        }
+        public WebSocketReadyState ReadyState => _state;
 
         /// <summary>
         /// Gets the number of bytes of UTF-8 text that have been queued using
@@ -157,19 +151,13 @@
         /// executing a task, had not yet been transmitted to the network.
         /// </summary>
         [DomName("bufferedAmount")]
-        public Int64 Buffered
-        {
-            get { return 0; }
-        }
+        public Int64 Buffered => 0;
 
         /// <summary>
         /// Gets the chosen protocol for the connection.
         /// </summary>
         [DomName("protocol")]
-        public String Protocol
-        {
-            get { return _ws.SubProtocol ?? String.Empty; }
-        }
+        public String Protocol => _ws.SubProtocol ?? String.Empty;
 
         #endregion
 
