@@ -86,7 +86,7 @@ namespace AngleSharp.Io.Dom
         /// <param name="element">The element referencing the link to follow.</param>
         /// <param name="cancellationToken">The token to cancel the download.</param>
         /// <returns>The task eventually resulting in the response.</returns>
-        public static Task<IResponse> DownloadAsync<TElement>(this TElement element, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task<IResponse> DownloadAsync<TElement>(this TElement element, CancellationToken cancellationToken = default)
             where TElement : class, IUrlUtilities, IElement
         {
             var context = element?.Owner.Context ?? throw new InvalidOperationException("The element needs to be inside a browsing context.");

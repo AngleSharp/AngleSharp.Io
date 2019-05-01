@@ -9,6 +9,7 @@ Released on Thursday, May 2 2019.
 - Added ability for binary data restore on assets (#19)
 - Added `DownloadAsync` extension method to `IUrlUtilities` elements
 - Added more extension methods to `IResponse` (e.g., `SaveToAsync`)
+- Introduced improved cookie container (#15)
 
 # 0.10.1
 
