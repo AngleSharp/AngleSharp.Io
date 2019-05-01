@@ -6,7 +6,7 @@ namespace AngleSharp.Io.Tests.Integration
     using System.Threading.Tasks;
 
     [TestFixture]
-    public class DownloadTest
+    public class DownloadTests
     {
         [Test]
         public async Task DownloadPngIfWanted()
