@@ -20,7 +20,7 @@ namespace AngleSharp.Io.Network
         {
             if (_download(options.ContentType, options.Response))
             {
-                return context.OpenNewAsync(options.Response.Address.Href, cancellationToken);
+                return Task.FromResult<IDocument>(null);
             }
 
             return _documentFactory.CreateAsync(context, options, cancellationToken);
