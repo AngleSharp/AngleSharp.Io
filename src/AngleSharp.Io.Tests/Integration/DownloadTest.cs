@@ -53,5 +53,23 @@ namespace AngleSharp.Io.Tests.Integration
             Assert.IsNotNull(linkedDocument);
             Assert.AreNotEqual(document, context.Active);
         }
+
+        [Test]
+        public async Task StandardDownloadBinary()
+        {
+            var downloadSeen = default(string);
+            var config = Configuration.Default.WithStandardDownload((name, content) =>
+            {
+                downloadSeen = name;
+                content.Dispose();
+            });
+            var context = BrowsingContext.New(config);
+            var document = await context.OpenAsync(req => req.Content("<a href=\"http://example.com/setup.exe\">Download setup</a>"));
+            var linkedDownload = await document.QuerySelector<IHtmlAnchorElement>("a").NavigateAsync();
+
+            Assert.AreEqual("setup.exe", downloadSeen);
+            Assert.IsNull(linkedDownload);
+            Assert.AreEqual(document, context.Active);
+        }
     }
 }
