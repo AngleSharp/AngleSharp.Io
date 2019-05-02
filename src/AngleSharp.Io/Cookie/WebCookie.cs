@@ -7,7 +7,7 @@ namespace AngleSharp.Io.Cookie
     /// <summary>
     /// Represents a parsed web cookie.
     /// </summary>
-    public sealed class WebCookie
+    public sealed class WebCookie : IComparable<WebCookie>, IEquatable<WebCookie>
     {
         private List<String> _extensions;
 
@@ -18,16 +18,17 @@ namespace AngleSharp.Io.Cookie
         /// </summary>
         /// <param name="value">The value to parse.</param>
         /// <returns>The created web cookie.</returns>
-        public static WebCookie FromString(String value)
-        {
-            var parser = new CookieParser();
-            throw new NotImplementedException();
-        }
+        public static WebCookie FromString(String value) => CookieParser.Parse(value);
 
         /// <summary>
         /// Gets the associated domain of the cookie.
         /// </summary>
         public String Domain { get; internal set; }
+
+        /// <summary>
+        /// Gets the computed canonical domain of the cookie.
+        /// </summary>
+        public String CanonicalDomain => Helpers.CanonicalDomain(Domain);
 
         /// <summary>
         /// Gets the path of the cookie.
@@ -89,8 +90,8 @@ namespace AngleSharp.Io.Cookie
         /// Computes the time to live.
         /// For reference, see RFC6265 S4.1.2.2.
         /// </summary>
-        /// <param name="now"></param>
-        /// <returns></returns>
+        /// <param name="now">The reference time.</param>
+        /// <returns>The time to live if any.</returns>
         public TimeSpan? ComputeTimeToLive(DateTime now)
         {
             /*
@@ -113,6 +114,28 @@ namespace AngleSharp.Io.Cookie
             return TimeSpan.FromSeconds(Math.Max(0, MaxAge.Value));
         }
 
+        /// <summary>
+        /// Computes the expiration time relative to the provided now.
+        /// </summary>
+        /// <param name="now">The reference time.</param>
+        /// <returns>The expiration time.</returns>
+        public DateTime ComputeExpiration(DateTime now)
+        {
+            if (MaxAge.HasValue)
+            {
+                var relativeTo = now;
+                var age = (MaxAge.Value <= 0) ? -Int32.MaxValue : MaxAge.Value;
+                return relativeTo.AddSeconds(age);
+            }
+
+            if (!Expires.HasValue)
+            {
+                return DateTime.MaxValue;
+            }
+
+            return Expires.Value;
+        }
+
         internal void WithExtension(String extension)
         {
             if (_extensions == null)
@@ -122,5 +145,62 @@ namespace AngleSharp.Io.Cookie
 
             _extensions.Add(extension);
         }
+
+        /// <inheritdoc />
+        public Int32 CompareTo(WebCookie other)
+        {
+            var cmp = Domain?.CompareTo(other.Domain ?? String.Empty) ?? 0;
+
+            if (cmp != 0)
+            {
+                return cmp;
+            }
+
+            cmp = Path?.CompareTo(other.Path ?? String.Empty) ?? 0;
+
+            if (cmp != 0)
+            {
+                return cmp;
+            }
+
+            cmp = Key?.CompareTo(other.Key ?? String.Empty) ?? 0;
+
+            if (cmp != 0)
+            {
+                return cmp;
+            }
+
+            cmp = Value?.CompareTo(other.Value ?? String.Empty) ?? 0;
+
+            if (cmp != 0)
+            {
+                return cmp;
+            }
+
+            cmp = TimeToLive?.CompareTo(other.TimeToLive ?? TimeSpan.Zero) ?? 0;
+
+            if (cmp != 0)
+            {
+                return cmp;
+            }
+
+            return GetHashCode().CompareTo(other.GetHashCode());
+        }
+
+        /// <summary>
+        /// Checks if the current WebCookie is equal to the provided one.
+        /// </summary>
+        /// <param name="other">The instance to compare to.</param>
+        /// <returns>True if both are value-wise equal, otherwise false.</returns>
+        public Boolean Equals(WebCookie other) =>
+            Domain.Equals(other.Domain) &&
+            Expires.Equals(other.Expires) &&
+            IsHostOnly.Equals(other.IsHostOnly) &&
+            IsHttpOnly.Equals(other.IsHttpOnly) &&
+            IsSecure.Equals(other.IsSecure) &&
+            Key.Equals(other.Key) &&
+            Value.Equals(other.Value) &&
+            Path.Equals(other.Path) &&
+            MaxAge.Equals(other.MaxAge);
     }
 }
