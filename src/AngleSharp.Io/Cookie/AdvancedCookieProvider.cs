@@ -35,12 +35,89 @@ namespace AngleSharp.Io.Cookie
 
         String ICookieProvider.GetCookie(Url url)
         {
-            throw new NotImplementedException();
+            var host = CanonicalDomain(url.HostName);
+            var path = String.IsNullOrEmpty(url.Path) ? "/" : url.Path;
+            var secure = url.Scheme.IsOneOf(ProtocolNames.Https, ProtocolNames.Wss);
+            var now = DateTime.UtcNow;
+            var cookies = FindCookies(host, path)
+                .ToArray()
+                .Where(c =>
+                {
+                    if (c.IsHostOnly ?? false)
+                    {
+                        if (!c.Domain.Is(host))
+                        {
+                            return false;
+                        }
+                    }
+                    else if (!DomainMatch(host, c.Domain, false))
+                    {
+                        return false;
+                    }
+
+                    if (!CheckPaths(path, c.Path))
+                    {
+                        return false;
+                    }
+
+                    // "If the cookie's secure-only-flag is true, then the request-uri's
+                    // scheme must denote a "secure" protocol"
+                    if (c.IsSecure && !secure)
+                    {
+                        return false;
+                    }
+
+                    // deferred from Section 5.3
+                    // non-RFC: allow retention of expired cookies by choice
+                    if (c.ComputeExpiration(now) <= now)
+                    {
+                        RemoveCookie(c.Domain, c.Path, c.Key);
+                        return false;
+                    }
+
+                    return true;
+                })
+                .Select(c => c.ToGetCookie())
+                .ToArray();
+            return String.Join("; ", cookies);
         }
 
         void ICookieProvider.SetCookie(Url url, String value)
         {
-            throw new NotImplementedException();
+            var host = CanonicalDomain(url.HostName);
+            var cookie = WebCookie.FromString(value);
+
+            if (cookie != null)
+            {
+                if (!String.IsNullOrEmpty(cookie.Domain))
+                {
+                    var cdom = cookie.CanonicalDomain;
+                    var suffix = GetPublicSuffix(cdom);
+
+                    if (suffix == null || !DomainMatch(host, cdom, false))
+                    {
+                        return;
+                    }
+
+                    // don't reset if already set
+                    if (!cookie.IsHostOnly.HasValue)
+                    {
+                        cookie.IsHostOnly = false;
+                    }
+                }
+                else
+                {
+                    cookie.Domain = host;
+                    cookie.IsHostOnly = true;
+                }
+
+                if (String.IsNullOrEmpty(cookie.Path) || cookie.Path[0] != '/')
+                {
+                    cookie.Path = GetDefaultPath(url.Path);
+                }
+
+                AddCookie(cookie);
+            }
         }
 
         /// <summary>
@@ -87,9 +164,11 @@ namespace AngleSharp.Io.Cookie
         /// <param name="cookie">The cookie to add.</param>
         public void AddCookie(WebCookie cookie)
         {
-            _cookies.Remove(FindCookie(cookie.Domain, cookie.Path, cookie.Key));
-            _cookies.Add(cookie);
-            WriteCookies();
+            if (cookie != null)
+            {
+                _cookies.Remove(FindCookie(cookie.Domain, cookie.Path, cookie.Key));
+                InsertCookie(cookie);
+            }
         }
 
         /// <summary>
@@ -99,7 +178,11 @@ namespace AngleSharp.Io.Cookie
         /// <param name="newCookie">The updated cookie content.</param>
         public void UpdateCookie(WebCookie oldCookie, WebCookie newCookie)
         {
-            _cookies.Remove(FindCookie(oldCookie.Domain, oldCookie.Path, oldCookie.Key));
+            if (oldCookie != null)
+            {
+                _cookies.Remove(FindCookie(oldCookie.Domain, oldCookie.Path, oldCookie.Key));
+            }
+
             AddCookie(newCookie);
         }
 
@@ -154,6 +237,21 @@ namespace AngleSharp.Io.Cookie
         }
 
         private List<WebCookie> ReadCookies() => Deserialize(_handler.ReadFile(), _forceParse, _httpOnlyExtension);
+
+        private void InsertCookie(WebCookie cookie)
+        {
+            for (var i = 0; i < _cookies.Count; i++)
+            {
+                if (cookie.CompareTo(_cookies[i]) > 0)
+                {
+                    _cookies.Insert(i, cookie);
+                    return;
+                }
+            }
+
+            _cookies.Add(cookie);
+            WriteCookies();
+        }
 
         private void WriteCookies()
         {
