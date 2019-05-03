@@ -2,6 +2,7 @@ namespace AngleSharp
 {
     using AngleSharp.Dom;
     using AngleSharp.Io;
+    using AngleSharp.Io.Cookie;
     using AngleSharp.Io.Network;
     using System;
     using System.IO;
@@ -13,6 +14,8 @@ namespace AngleSharp
     /// </summary>
     public static class IoConfigurationExtensions
     {
+        #region Download
+
         /// <summary>
         /// Adds capability to start a download when following some link to the
         /// configuration.
@@ -56,6 +59,10 @@ namespace AngleSharp
             });
         }
 
+        #endregion
+
+        #region Requesters
+
         /// <summary>
         /// Adds the requesters from the AngleSharp.Io package.
         /// </summary>
@@ -84,5 +91,47 @@ namespace AngleSharp
                 new AboutRequester(),
             });
         }
+
+        #endregion
+
+        #region Cookies
+
+        /// <summary>
+        /// Registers a persistent advanced cookie container using the local file handler.
+        /// </summary>
+        /// <param name="configuration">The configuration to extend.</param>
+        /// <param name="syncFilePath">The path to the required sync file.</param>
+        /// <returns>The new instance with the service.</returns>
+        public static IConfiguration WithPersistentCookies(this IConfiguration configuration, String syncFilePath) =>
+            configuration.WithCookies(new LocalFileHandler(syncFilePath));
+
+        /// <summary>
+        /// Registers a non-persistent advanced cookie container using the memory-only file
+        /// handler.
+        /// </summary>
+        /// <param name="configuration">The configuration to extend.</param>
+        /// <returns>The new instance with the service.</returns>
+        public static IConfiguration WithTemporaryCookies(this IConfiguration configuration) =>
+            configuration.WithCookies(new MemoryFileHandler());
+
+        /// <summary>
+        /// Registers the advanced cookie service.
+        /// </summary>
+        /// <param name="configuration">The configuration to extend.</param>
+        /// <param name="fileHandler">The handler for the cookie source.</param>
+        /// <returns>The new instance with the service.</returns>
+        public static IConfiguration WithCookies(this IConfiguration configuration, IFileHandler fileHandler) =>
+            configuration.WithCookies(new AdvancedCookieProvider(fileHandler));
+
+        /// <summary>
+        /// Registers a cookie service with the given provider.
+        /// </summary>
+        /// <param name="configuration">The configuration to extend.</param>
+        /// <param name="provider">The provider for cookie interactions.</param>
+        /// <returns>The new instance with the service.</returns>
+        public static IConfiguration WithCookies(this IConfiguration configuration, ICookieProvider provider) =>
+            configuration.WithOnly<ICookieProvider>(provider);
+
+        #endregion
     }
 }
