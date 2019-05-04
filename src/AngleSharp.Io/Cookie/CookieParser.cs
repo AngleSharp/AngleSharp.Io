@@ -1,37 +1,68 @@
 namespace AngleSharp.Io.Cookie
 {
+    using AngleSharp.Text;
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Text.RegularExpressions;
 
-    internal static class CookieParser
+    internal class CookieParser
     {
         private static readonly Regex InvalidChars = new Regex("[\\x00-\\x1F]");
         private static readonly Char[] Terminators = new[] { '\n', '\r', '\0' };
 
-        public static WebCookie Parse(String str, Boolean loose = false)
+        private readonly String[] _content;
+        private readonly Boolean _loose;
+        private Int32 _current;
+        private Int32 _index;
+
+        public CookieParser(String content, Boolean loose = false)
         {
-            str = str.Trim();
+            _content = (content ?? String.Empty).Split(',').Select(m => m.Trim()).ToArray();
+            _loose = loose;
+        }
 
-            // See section 5.2
-            var firstSemi = str.IndexOf(';');
-            var cookiePair = (firstSemi == -1) ? str : str.Substring(0, firstSemi);
-            var c = ParseCookiePair(cookiePair, loose);
+        private String Content => _content[_current];
 
-            if (c == null)
+        public List<WebCookie> Parse()
+        {
+            var cookies = new List<WebCookie>();
+            _current = 0;
+            _index = 0;
+
+            while (_current < _content.Length)
             {
-                return null;
+                var cookie = ParseNext();
+
+                if (cookie != null)
+                {
+                    cookies.Add(cookie);
+                }
+
+                _current++;
+                _index = 0;
             }
 
-            if (firstSemi == -1)
+            return cookies;
+        }
+
+        public static WebCookie ParseSingle(String str, Boolean loose = false)
+        {
+            var parser = new CookieParser(str, loose);
+
+            if (!String.IsNullOrEmpty(str))
             {
-                return c;
+                return parser.ParseNext();
             }
 
-            // Section 5.2.3
-            var unparsed = str.Substring(firstSemi + 1).Trim();
+            return null;
+        }
 
-            if (unparsed.Length > 0)
+        private WebCookie ParseNext()
+        {
+            var cookie = ParseCookiePair();
+
+            if (cookie != null && _index < Content.Length)
             {
                 /*
                  * 5.2 says that when looping over the items: "[p]rocess the attribute-name
@@ -41,115 +72,103 @@ namespace AngleSharp.Io.Cookie
                  * cookie-attribute-list".
                  * Therefore, in this implementation, we overwrite the previous value.
                  */
-                var cookie_avs = new Queue<String>(unparsed.Split(';'));
-
-                while (cookie_avs.Count > 0)
+                while (_index < Content.Length)
                 {
-                    var av = cookie_avs.Dequeue().Trim();
+                    var start = _index;
+                    var end = NormalizeEnd(Content.IndexOf(';', start), Content.Length);
+                    var contentEnd = Rewind(end);
 
-                    // happens if ";;" appears
-                    if (av.Length == 0)
+                    // happens NOT if ";;" appears
+                    if (contentEnd > start)
                     {
-                        continue;
-                    }
+                        var av_sep = NormalizeEnd(Content.IndexOf('=', start, contentEnd - start), contentEnd);
+                        var av_key = Content.Substring(start, Rewind(av_sep) - start).ToLowerInvariant();
+                        SkipWhitespace(av_sep + 1);
+                        var hasValue = _index < contentEnd;
 
-                    var av_sep = av.IndexOf('=');
-                    var av_key = String.Empty;
-                    var av_value = String.Empty;
-
-                    if (av_sep == -1)
-                    {
-                        av_key = av;
-                        av_value = null;
-                    }
-                    else
-                    {
-                        av_key = av.Substring(0, av_sep);
-                        av_value = av.Substring(av_sep + 1);
-                    }
-
-                    av_key = av_key.Trim().ToLowerInvariant();
-
-                    if (!String.IsNullOrEmpty(av_value))
-                    {
-                        av_value = av_value.Trim();
-                    }
-
-                    switch (av_key)
-                    {
-                        // Section 5.2.1
-                        case "expires":
-                            if (!String.IsNullOrEmpty(av_value))
-                            {
-                                var exp = CookieDateParser.Parse(av_value);
-
-                                if (exp.HasValue)
+                        switch (av_key)
+                        {
+                            // Section 5.2.1
+                            case "expires":
+                                if (hasValue && TryParseDateTime(contentEnd, out var expires))
                                 {
-                                    c.Expires = exp;
+                                    cookie.Expires = expires;
                                 }
-                            }
-                            break;
-                        // Section 5.2.2
-                        case "max-age":
-                            if (!String.IsNullOrEmpty(av_value))
-                            {
-                                if (Int32.TryParse(av_value, out var delta))
+                                break;
+                            // Section 5.2.2
+                            case "max-age":
+                                if (hasValue && TryParseInteger(contentEnd, out var delta))
                                 {
-                                    c.MaxAge = delta;
+                                    cookie.MaxAge = delta;
                                 }
-                            }
-                            break;
-                        // Section 5.2.3
-                        case "domain":
-                            if (!String.IsNullOrEmpty(av_value))
-                            {
-                                var domain = av_value.Trim().TrimStart('.');
-
-                                if (!String.IsNullOrEmpty(domain))
+                                break;
+                            // Section 5.2.3
+                            case "domain":
+                                if (hasValue && TryParseDomain(contentEnd, out var domain))
                                 {
-                                    c.Domain = domain.ToLowerInvariant();
+                                    cookie.Domain = domain;
                                 }
-                            }
-                            break;
-                        // Section 5.2.4
-                        case "path":
-                            c.Path = !String.IsNullOrEmpty(av_value) && av_value[0] == '/' ? av_value : null;
-                            break;
-                        // Section 5.2.5
-                        case "secure":
-                            c.IsSecure = true;
-                            break;
-                        // Section 5.2.6
-                        case "httponly":
-                            c.IsHttpOnly = true;
-                            break;
-                        default:
-                            c.WithExtension(av);
-                            break;
+                                break;
+                            // Section 5.2.4
+                            case "path":
+                                if (hasValue && TryParsePath(contentEnd, out var path))
+                                {
+                                    cookie.Path = path;
+                                }
+                                break;
+                            // Section 5.2.5
+                            case "secure":
+                                cookie.IsSecure = true;
+                                break;
+                            // Section 5.2.6
+                            case "httponly":
+                                cookie.IsHttpOnly = true;
+                                break;
+                            default:
+                                cookie.WithExtension(Cut(start, contentEnd));
+                                break;
+                        }
                     }
+                    
+                    SkipWhitespace(NormalizeEnd(Content.IndexOf(';', start), Content.Length) + 1);
                 }
             }
 
-            return c;
+            return cookie;
         }
 
-        private static WebCookie ParseCookiePair(String cookiePair, Boolean loose)
+        private WebCookie ParseCookiePair()
         {
-            cookiePair = TrimTerminator(cookiePair);
+            // See section 5.2
+            var firstSemi = Content.IndexOf(';', _index);
+            var end = Content.IndexOfAny(Terminators, _index);
 
-            var firstEq = cookiePair.IndexOf('=');
-
-            if (loose)
+            if (end == -1 && firstSemi == -1)
             {
-                if (firstEq == 0)
+                end = Content.Length;
+            }
+            else if (end == -1)
+            {
+                end = firstSemi;
+            }
+            else if (firstSemi != -1)
+            {
+                end = Math.Min(firstSemi, end);
+            }
+
+            var firstEq = Content.IndexOf('=', _index, end - _index);
+
+            if (_loose)
+            {
+                if (firstEq == _index)
                 {
                     // '=' is immediately at start
-                    cookiePair = cookiePair.Substring(1);
+                    _index++;
                     // might still need to split on '='
-                    firstEq = cookiePair.IndexOf('=');
+                    firstEq = Content.IndexOf('=', _index, end - _index);
                 }
             }
-            else if (firstEq <= 0)
+            else if (firstEq <= _index)
             {
                 // no '=' or is at start
                 // needs to have non-empty "cookie-name"
@@ -159,41 +178,312 @@ namespace AngleSharp.Io.Cookie
             var cookieName = String.Empty;
             var cookieValue = String.Empty;
 
-            if (firstEq <= 0)
+            if (firstEq <= _index)
             {
-                cookieValue = cookiePair.Trim();
+                cookieValue = Content.Substring(_index, end - _index).Trim();
             }
             else
             {
-                cookieName = cookiePair.Substring(0, firstEq).Trim();
-                cookieValue = cookiePair.Substring(firstEq + 1).Trim();
+                cookieName = Content.Substring(_index, firstEq - _index).Trim();
+                cookieValue = Content.Substring(firstEq + 1, end - firstEq - 1).Trim();
             }
 
-            if (InvalidChars.IsMatch(cookieName) || InvalidChars.IsMatch(cookieValue))
+            if (!InvalidChars.IsMatch(cookieName) && !InvalidChars.IsMatch(cookieValue))
             {
-                return null;
+                // Section 5.2.3
+                SkipWhitespace(Math.Min(Content.Length, end + 1));
+
+                return new WebCookie
+                {
+                    Key = cookieName,
+                    Value = cookieValue,
+                };
             }
 
-            return new WebCookie
-            {
-                Key = cookieName,
-                Value = cookieValue,
-            };
+            return null;
         }
 
-        private static String TrimTerminator(String str)
+        public Boolean TryParseDomain(Int32 end, out String domain)
         {
-            foreach (var terminator in Terminators)
-            {
-                var terminatorIdx = str.IndexOf(terminator);
+            var offset = Content[_index] == '.' ? 1 : 0;
+            domain = Cut(_index + offset, end).ToLowerInvariant();
+            return domain.Length > 0;
+        }
 
-                if (terminatorIdx != -1)
+        private Boolean TryParsePath(Int32 end, out String path)
+        {
+            path = Cut(_index, end);
+            return path.Length > 0 && path[0] == '/';
+        }
+
+        public Boolean TryParseInteger(Int32 end, out Int32 value)
+        {
+            value = 0;
+
+            while (_index < end && Content[_index].IsDigit())
+            {
+                value = value * 10 + Content[_index++] - '0';
+            }
+
+            return _index == end;
+        }
+
+        public Boolean TryParseDateTime(Int32 end, out DateTime dateTime)
+        {
+            // RFC6265 Section 5.1.1:
+            var time = default(Int32[]);
+            var dayOfMonth = default(Int32?);
+            var month = default(Int32?);
+            var year = default(Int32?);
+            var start = _index;
+
+            while (_index < end && (!dayOfMonth.HasValue || !month.HasValue || !year.HasValue || time == null))
+            {
+                if (IsDateDeliminator(Content[_index]))
                 {
-                    str = str.Substring(0, terminatorIdx);
+                    _index++;
+                    continue;
+                }
+
+                // See section 2.1
+                if (time == null && TryParseTime(end, out var timeParts))
+                {
+                    time = timeParts;
+                    continue;
+                }
+
+                // See section 2.2
+                if (dayOfMonth == null && TryParseDigits(end, 1, 2, true, out var monthDayIndex))
+                {
+                    dayOfMonth = monthDayIndex;
+                    continue;
+                }
+
+                // See section 2.3
+                if (month == null && TryParseMonth(end, out var monthIndex))
+                {
+                    month = monthIndex;
+                    continue;
+                }
+
+                // See section 2.4
+                if (year == null && TryParseDigits(end, 2, 4, true, out var yearValue))
+                {
+                    year = yearValue;
+
+                    // See Section 5.1.1
+                    if (year >= 70 && year <= 99)
+                    {
+                        year += 1900;
+                    }
+                    else if (year >= 0 && year <= 69)
+                    {
+                        year += 2000;
+                    }
+
+                    continue;
+                }
+
+                while (_index < end && !IsDateDeliminator(Content[_index]))
+                {
+                    _index++;
+                }
+
+                if (_index == end && end == Content.Length && _current < _content.Length)
+                {
+                    _current++;
+                    _index = 0;
+                    end = NormalizeEnd(Content.IndexOf(';'), Content.Length);
                 }
             }
 
-            return str;
+            // See RFC 6265 Section 5.1.1
+            if (!dayOfMonth.HasValue || !month.HasValue || !year.HasValue || time == null)
+            {
+                _index = start;
+                dateTime = DateTime.UtcNow;
+                return false;
+            }
+
+            dateTime = new DateTime(year.Value, month.Value, dayOfMonth.Value, time[0], time[1], time[2], DateTimeKind.Utc);
+            return dayOfMonth > 0 && dayOfMonth < 32 && year > 1600 && time[0] < 24 && time[1] < 60 && time[2] < 60;
         }
+
+        private Boolean TryParseMonth(Int32 end, out Int32 month)
+        {
+            month = 0;
+
+            if (end - _index > 2)
+            {
+                var token = Cut(_index + 3).ToLowerInvariant();
+
+                switch (token)
+                {
+                    case "jan":
+                        month = 1;
+                        break;
+                    case "feb":
+                        month = 2;
+                        break;
+                    case "mar":
+                        month = 3;
+                        break;
+                    case "apr":
+                        month = 4;
+                        break;
+                    case "may":
+                        month = 5;
+                        break;
+                    case "jun":
+                        month = 6;
+                        break;
+                    case "jul":
+                        month = 7;
+                        break;
+                    case "aug":
+                        month = 8;
+                        break;
+                    case "sep":
+                        month = 9;
+                        break;
+                    case "oct":
+                        month = 10;
+                        break;
+                    case "nov":
+                        month = 11;
+                        break;
+                    case "dec":
+                        month = 12;
+                        break;
+                }
+            }
+
+            if (month > 0)
+            {
+                _index += 3;
+                return true;
+            }
+
+            return false;
+        }
+
+        private Boolean TryParseDigits(Int32 end, Int32 minDigits, Int32 maxDigits, Boolean trailing, out Int32 value)
+        {
+            var start = _index;
+            value = 0;
+
+            while (_index < end)
+            {
+                var c = Content[_index];
+
+                // "non-digit = %x00-2F / %x3A-FF"
+                if (c <= 0x2F || c >= 0x3A)
+                {
+                    break;
+                }
+
+                value = value * 10 + c - '0';
+                _index++;
+            }
+
+            var count = _index - start;
+
+            // constrain to a minimum and maximum number of digits.
+            if (count < minDigits || count > maxDigits)
+            {
+                _index = start;
+                return false;
+            }
+            else if (!trailing && _index != end && !IsDateDeliminator(Content[_index]))
+            {
+                _index = start;
+                return false;
+            }
+            
+            return true;
+        }
+
+        private Boolean TryParseTime(Int32 end, out Int32[] result)
+        {
+            var i = 0;
+            var start = _index;
+
+            result = new[] { 0, 0, 0 };
+
+            // See RF6256 Section 5.1.1
+            while (i < 3 && _index < end)
+            {
+                var next = i == 2 ? end : FindNext(':', end);
+
+                if (!TryParseDigits(next, 1, 2, i == 2, out var value))
+                {
+                    break;
+                }
+
+                result[i++] = value;
+
+                if (_index < end && Content[_index] == ':')
+                {
+                    _index++;
+                }
+            }
+
+            if (i < 3 || (_index <end && !IsDateDeliminator(Content[_index])))
+            {
+                _index = start;
+                return false;
+            }
+
+            return true;
+        }
+
+        private Int32 FindNext(Char target, Int32 end)
+        {
+            var idx = _index;
+
+            while (idx < end && Content[idx] != target)
+            {
+                idx++;
+            }
+
+            return idx;
+        }
+
+        private String Cut(Int32 end) => Content.Substring(_index, end - _index);
+
+        private String Cut(Int32 start, Int32 end) => Content.Substring(start, end - start);
+
+        private Int32 NormalizeEnd(Int32 end, Int32 length)
+        {
+            if (end < 0 || end >= length)
+            {
+                return length;
+            }
+
+            return end;
+        }
+
+        private Int32 Rewind(Int32 end)
+        {
+            while (end > _index && Char.IsWhiteSpace(Content[end - 1]))
+            {
+                end--;
+            }
+
+            return end;
+        }
+
+        private void SkipWhitespace(Int32 position)
+        {
+            while (position < Content.Length && Char.IsWhiteSpace(Content[position]))
+            {
+                position++;
+            }
+
+            _index = position;
+        }
+
+        private static Boolean IsDateDeliminator(Char c) =>
+            c == 0x09 || c.IsInRange(0x20, 0x2f) || c.IsInRange(0x3b, 0x40) || c.IsInRange(0x5b, 0x60) || c.IsInRange(0x7b, 0x7e);
     }
 }

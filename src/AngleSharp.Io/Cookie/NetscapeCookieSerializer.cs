@@ -53,15 +53,32 @@ namespace AngleSharp.Io.Cookie
         public static List<WebCookie> Deserialize(String content, Boolean forceParse, Boolean httpOnlyExtension)
         {
             var result = new List<WebCookie>();
-            var lines = NewLine.Split(content);
-            var lineCount = 0;
-            var httpOnly = false;
+
+            if (!String.IsNullOrEmpty(content))
+            {
+                var lines = NewLine.Split(content);
+
+                InitialCheck(lines, forceParse);
+                ParseAll(lines, forceParse, httpOnlyExtension, result);
+            }
+
+            return result;
+        }
+
+        private static void InitialCheck(IEnumerable<String> lines, Boolean forceParse)
+        {
             var magic = lines.FirstOrDefault();
 
             if ((String.IsNullOrEmpty(magic) || !DetectHead.IsMatch(magic)) && !forceParse)
             {
                 throw new InvalidOperationException("The given file does not look like a Netscape cookies file!");
             }
+        }
+
+        private static void ParseAll(IEnumerable<String> lines, Boolean forceParse, Boolean httpOnlyExtension, List<WebCookie> result)
+        {
+            var httpOnly = false;
+            var lineCount = 0;
 
             foreach (var current in lines)
             {
@@ -105,8 +122,6 @@ namespace AngleSharp.Io.Cookie
                     result.Add(cookie);
                 }
             }
-
-            return result;
         }
     }
 }

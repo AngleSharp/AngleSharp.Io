@@ -85,9 +85,10 @@ namespace AngleSharp.Io.Cookie
         void ICookieProvider.SetCookie(Url url, String value)
         {
             var host = CanonicalDomain(url.HostName);
-            var cookie = WebCookie.FromString(value);
+            var parser = new CookieParser(value);
+            var cookies = parser.Parse();
 
-            if (cookie != null)
+            foreach (var cookie in cookies)
             {
                 if (!String.IsNullOrEmpty(cookie.Domain))
                 {

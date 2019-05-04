@@ -38,7 +38,7 @@ namespace AngleSharp.Io.Tests.Cookie
             var cookie = await LoadDocumentWithCookie(
                 "FGTServer=04E2E1A642B2BB49C6FE0115DE3976CB377263F3278BD6C8E2F8A24EE4DF7562F089BFAC5C0102; Version=1");
             Assert.AreEqual(
-                "$Version=1; FGTServer=04E2E1A642B2BB49C6FE0115DE3976CB377263F3278BD6C8E2F8A24EE4DF7562F089BFAC5C0102",
+                "FGTServer=04E2E1A642B2BB49C6FE0115DE3976CB377263F3278BD6C8E2F8A24EE4DF7562F089BFAC5C0102",
                 cookie);
         }
 
@@ -46,14 +46,14 @@ namespace AngleSharp.Io.Tests.Cookie
         public async Task Version1CookieIsAlreadyTransformed()
         {
             var cookie = await LoadDocumentWithCookie("Customer=\"WILE_E_COYOTE\"; Version=\"1\"");
-            Assert.AreEqual("$Version=\"1\"; Customer=\"WILE_E_COYOTE\"", cookie);
+            Assert.AreEqual("Customer=\"WILE_E_COYOTE\"", cookie);
         }
 
         [Test]
         public async Task Version1CookieWithSingleEntryAlreadyTransformedCorrectly()
         {
             var cookie = await LoadDocumentWithCookie("Shipping=FedEx; Version=\"1\"");
-            Assert.AreEqual("$Version=\"1\"; Shipping=FedEx", cookie);
+            Assert.AreEqual("Shipping=FedEx", cookie);
         }
 
         [Test]
@@ -106,14 +106,14 @@ namespace AngleSharp.Io.Tests.Cookie
             var document = await LoadDocumentAloneWithCookie("cookie=two; Max-Age=36001");
             Assert.AreEqual("cookie=two", document.Cookie);
             document.Cookie = "foo=bar";
-            Assert.AreEqual("cookie=two; foo=bar", document.Cookie);
+            Assert.AreEqual("foo=bar; cookie=two", document.Cookie);
         }
 
         [Test]
         public async Task InvalidatingCookieRemovesTheCookie()
         {
             var document = await LoadDocumentAloneWithCookie("cookie=two; Max-Age=36001, foo=bar");
-            Assert.AreEqual("cookie=two; foo=bar", document.Cookie);
+            Assert.AreEqual("foo=bar; cookie=two", document.Cookie);
             document.Cookie = "cookie=expiring; Expires=Tue, 10 Nov 2009 23:00:00 GMT";
             Assert.AreEqual("foo=bar", document.Cookie);
         }
@@ -245,13 +245,13 @@ namespace AngleSharp.Io.Tests.Cookie
 
                 var expected = @"{
   ""cookies"": {
-    ""foo"": ""bar"",
-    ""k1"": ""v1"",
-    ""k2"": ""v2"",
+    ""foo"": ""bar"", 
+    ""k1"": ""v1"", 
+    ""k2"": ""v2"", 
     ""test"": ""baz""
   }
 }
-";
+".Replace(Environment.NewLine, "\n");
 
                 Assert.AreEqual(expected, document.Body.TextContent);
             }

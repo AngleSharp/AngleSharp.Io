@@ -18,7 +18,7 @@ namespace AngleSharp.Io.Cookie
         /// </summary>
         /// <param name="value">The value to parse.</param>
         /// <returns>The created web cookie.</returns>
-        public static WebCookie FromString(String value) => CookieParser.Parse(value);
+        public static WebCookie FromString(String value) => CookieParser.ParseSingle(value);
 
         /// <summary>
         /// Gets the associated domain of the cookie.
