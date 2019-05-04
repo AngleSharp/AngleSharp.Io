@@ -36,7 +36,7 @@ namespace AngleSharp.Io.Cookie
         String ICookieProvider.GetCookie(Url url)
         {
             var host = CanonicalDomain(url.HostName);
-            var path = String.IsNullOrEmpty(url.Path) ? "/" : url.Path;
+            var path = String.IsNullOrEmpty(url.Path) ? "/" : $"/{url.Path}";
             var secure = url.Scheme.IsOneOf(ProtocolNames.Https, ProtocolNames.Wss);
             var now = DateTime.UtcNow;
             var cookies = FindCookies(host, path)
@@ -97,7 +97,7 @@ namespace AngleSharp.Io.Cookie
 
                     if (suffix == null || !DomainMatch(host, cdom, false))
                     {
-                        return;
+                        continue;
                     }
 
                     // don't reset if already set
@@ -114,7 +114,7 @@ namespace AngleSharp.Io.Cookie
 
                 if (String.IsNullOrEmpty(cookie.Path) || cookie.Path[0] != '/')
                 {
-                    cookie.Path = GetDefaultPath(url.Path);
+                    cookie.Path = GetDefaultPath($"/{url.Path}");
                 }
 
                 AddCookie(cookie);

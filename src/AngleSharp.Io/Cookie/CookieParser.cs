@@ -22,7 +22,7 @@ namespace AngleSharp.Io.Cookie
             _loose = loose;
         }
 
-        private String Content => _content[_current];
+        private String Content => _current < _content.Length ? _content[_current] : String.Empty;
 
         public List<WebCookie> Parse()
         {
@@ -74,17 +74,27 @@ namespace AngleSharp.Io.Cookie
                  */
                 while (_index < Content.Length)
                 {
+                    var content = Content;
                     var start = _index;
-                    var end = NormalizeEnd(Content.IndexOf(';', start), Content.Length);
+                    var end = NormalizeEnd(content.IndexOf(';', start), content.Length);
                     var contentEnd = Rewind(end);
 
                     // happens NOT if ";;" appears
                     if (contentEnd > start)
                     {
-                        var av_sep = NormalizeEnd(Content.IndexOf('=', start, contentEnd - start), contentEnd);
-                        var av_key = Content.Substring(start, Rewind(av_sep) - start).ToLowerInvariant();
-                        SkipWhitespace(av_sep + 1);
-                        var hasValue = _index < contentEnd;
+                        var av_sep = NormalizeEnd(content.IndexOf('=', start, contentEnd - start), contentEnd);
+                        var av_key = content.Substring(start, Rewind(av_sep) - start).ToLowerInvariant();
+                        var hasValue = false;
+
+                        if (av_sep != contentEnd)
+                        {
+                            SkipWhitespace(av_sep + 1);
+                            hasValue = _index < contentEnd;
+                        }
+                        else
+                        {
+                            _index = av_sep;
+                        }
 
                         switch (av_key)
                         {
@@ -129,8 +139,11 @@ namespace AngleSharp.Io.Cookie
                                 break;
                         }
                     }
-                    
-                    SkipWhitespace(NormalizeEnd(Content.IndexOf(';', start), Content.Length) + 1);
+
+                    if (_index < Content.Length)
+                    {
+                        SkipWhitespace(NormalizeEnd(Content.IndexOf(';', _index), Content.Length) + 1);
+                    }
                 }
             }
 
@@ -140,12 +153,13 @@ namespace AngleSharp.Io.Cookie
         private WebCookie ParseCookiePair()
         {
             // See section 5.2
-            var firstSemi = Content.IndexOf(';', _index);
-            var end = Content.IndexOfAny(Terminators, _index);
+            var content = Content;
+            var firstSemi = content.IndexOf(';', _index);
+            var end = content.IndexOfAny(Terminators, _index);
 
             if (end == -1 && firstSemi == -1)
             {
-                end = Content.Length;
+                end = content.Length;
             }
             else if (end == -1)
             {
@@ -156,7 +170,7 @@ namespace AngleSharp.Io.Cookie
                 end = Math.Min(firstSemi, end);
             }
 
-            var firstEq = Content.IndexOf('=', _index, end - _index);
+            var firstEq = content.IndexOf('=', _index, end - _index);
 
             if (_loose)
             {
@@ -165,7 +179,7 @@ namespace AngleSharp.Io.Cookie
                     // '=' is immediately at start
                     _index++;
                     // might still need to split on '='
-                    firstEq = Content.IndexOf('=', _index, end - _index);
+                    firstEq = content.IndexOf('=', _index, end - _index);
                 }
             }
             else if (firstEq <= _index)
@@ -180,18 +194,18 @@ namespace AngleSharp.Io.Cookie
 
             if (firstEq <= _index)
             {
-                cookieValue = Content.Substring(_index, end - _index).Trim();
+                cookieValue = content.Substring(_index, end - _index).Trim();
             }
             else
             {
-                cookieName = Content.Substring(_index, firstEq - _index).Trim();
-                cookieValue = Content.Substring(firstEq + 1, end - firstEq - 1).Trim();
+                cookieName = content.Substring(_index, firstEq - _index).Trim();
+                cookieValue = content.Substring(firstEq + 1, end - firstEq - 1).Trim();
             }
 
             if (!InvalidChars.IsMatch(cookieName) && !InvalidChars.IsMatch(cookieValue))
             {
                 // Section 5.2.3
-                SkipWhitespace(Math.Min(Content.Length, end + 1));
+                SkipWhitespace(Math.Min(content.Length, end + 1));
 
                 return new WebCookie
                 {
@@ -218,13 +232,26 @@ namespace AngleSharp.Io.Cookie
 
         public Boolean TryParseInteger(Int32 end, out Int32 value)
         {
+            var sign = 1;
+            var content = Content;
             value = 0;
 
-            while (_index < end && Content[_index].IsDigit())
+            if (content[_index] == '-')
             {
-                value = value * 10 + Content[_index++] - '0';
+                sign = -1;
+                _index++;
+            }
+            else if (content[_index] == '+')
+            {
+                _index++;
             }
 
+            while (_index < end && content[_index].IsDigit())
+            {
+                value = value * 10 + content[_index++] - '0';
+            }
+
+            value = value * sign;
             return _index == end;
         }
 
@@ -239,7 +266,9 @@ namespace AngleSharp.Io.Cookie
 
             while (_index < end && (!dayOfMonth.HasValue || !month.HasValue || !year.HasValue || time == null))
             {
-                if (IsDateDeliminator(Content[_index]))
+                var content = Content;
+
+                if (IsDateDeliminator(content[_index]))
                 {
                     _index++;
                     continue;
@@ -284,12 +313,12 @@ namespace AngleSharp.Io.Cookie
                     continue;
                 }
 
-                while (_index < end && !IsDateDeliminator(Content[_index]))
+                while (_index < end && !IsDateDeliminator(content[_index]))
                 {
                     _index++;
                 }
 
-                if (_index == end && end == Content.Length && _current < _content.Length)
+                if (_index == end && end == content.Length && _current < _content.Length)
                 {
                     _current++;
                     _index = 0;
@@ -370,11 +399,12 @@ namespace AngleSharp.Io.Cookie
         private Boolean TryParseDigits(Int32 end, Int32 minDigits, Int32 maxDigits, Boolean trailing, out Int32 value)
         {
             var start = _index;
+            var content = Content;
             value = 0;
 
             while (_index < end)
             {
-                var c = Content[_index];
+                var c = content[_index];
 
                 // "non-digit = %x00-2F / %x3A-FF"
                 if (c <= 0x2F || c >= 0x3A)
@@ -394,7 +424,7 @@ namespace AngleSharp.Io.Cookie
                 _index = start;
                 return false;
             }
-            else if (!trailing && _index != end && !IsDateDeliminator(Content[_index]))
+            else if (!trailing && _index != end && !IsDateDeliminator(content[_index]))
             {
                 _index = start;
                 return false;
@@ -407,6 +437,7 @@ namespace AngleSharp.Io.Cookie
         {
             var i = 0;
             var start = _index;
+            var content = Content;
 
             result = new[] { 0, 0, 0 };
 
@@ -422,13 +453,13 @@ namespace AngleSharp.Io.Cookie
 
                 result[i++] = value;
 
-                if (_index < end && Content[_index] == ':')
+                if (_index < end && content[_index] == ':')
                 {
                     _index++;
                 }
             }
 
-            if (i < 3 || (_index <end && !IsDateDeliminator(Content[_index])))
+            if (i < 3 || (_index <end && !IsDateDeliminator(content[_index])))
             {
                 _index = start;
                 return false;
@@ -440,8 +471,9 @@ namespace AngleSharp.Io.Cookie
         private Int32 FindNext(Char target, Int32 end)
         {
             var idx = _index;
+            var content = Content;
 
-            while (idx < end && Content[idx] != target)
+            while (idx < end && content[idx] != target)
             {
                 idx++;
             }
@@ -465,7 +497,9 @@ namespace AngleSharp.Io.Cookie
 
         private Int32 Rewind(Int32 end)
         {
-            while (end > _index && Char.IsWhiteSpace(Content[end - 1]))
+            var content = Content;
+
+            while (end > _index && Char.IsWhiteSpace(content[end - 1]))
             {
                 end--;
             }
@@ -475,7 +509,9 @@ namespace AngleSharp.Io.Cookie
 
         private void SkipWhitespace(Int32 position)
         {
-            while (position < Content.Length && Char.IsWhiteSpace(Content[position]))
+            var content = Content;
+
+            while (position < content.Length && Char.IsWhiteSpace(content[position]))
             {
                 position++;
             }
