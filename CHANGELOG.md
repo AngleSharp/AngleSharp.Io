@@ -1,3 +1,16 @@
+# 0.12.0
+
+Released on Thursday, May 2 2019.
+
+- Reference latest AngleSharp
+- Added `InputFile` class as a standard `IFile` implementation
+- Added `AppendFile` extensions for `IHtmlInputElement`
+- Included `WithDownload` and `WithStandardDownload` configuration
+- Added ability for binary data restore on assets (#19)
+- Added `DownloadAsync` extension method to `IUrlUtilities` elements
+- Added more extension methods to `IResponse` (e.g., `SaveToAsync`)
+- Introduced improved cookie container (#15)
+
 # 0.10.1
 
 Released on Monday, January 7 2019.

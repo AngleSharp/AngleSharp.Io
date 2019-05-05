@@ -25,6 +25,7 @@ namespace AngleSharp.Io.Tests.Integration
             Assert.AreEqual(iframe.ContentDocument, iframe.ContentWindow.Document);
         }
 
+        [Test]
         public async Task ImportPageFromDataRequest()
         {
             var receivedRequest = new TaskCompletionSource<Boolean>();
