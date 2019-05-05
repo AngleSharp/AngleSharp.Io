@@ -5,7 +5,7 @@ namespace AngleSharp.Io.Cookie
     /// <summary>
     /// Represents a file handler.
     /// </summary>
-    public interface IFileHandler
+    public interface ICookieFileHandler
     {
         /// <summary>
         /// Reads the (text) content from the file.

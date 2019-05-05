@@ -7,7 +7,7 @@ namespace AngleSharp.Io.Cookie
     /// Represents a file handler against the local
     /// file system.
     /// </summary>
-    public class LocalFileHandler : IFileHandler
+    public class LocalFileHandler : ICookieFileHandler
     {
         private readonly String _filePath;
 
@@ -17,9 +17,9 @@ namespace AngleSharp.Io.Cookie
         /// <param name="filePath">The path to resolve to.</param>
         public LocalFileHandler(String filePath) => _filePath = filePath;
 
-        String IFileHandler.ReadFile() => File.ReadAllText(_filePath);
+        String ICookieFileHandler.ReadFile() => File.ReadAllText(_filePath);
 
-        void IFileHandler.WriteFile(String content)
+        void ICookieFileHandler.WriteFile(String content)
         {
             //TODO Replace with queued async method
             File.WriteAllText(_filePath, content);

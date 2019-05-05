@@ -6,7 +6,7 @@ namespace AngleSharp.Io.Cookie
     /// A memory file handler to feed the cookie provider.
     /// Ideal for testing and sandboxed ("private") browsing.
     /// </summary>
-    public class MemoryFileHandler : IFileHandler
+    public class MemoryFileHandler : ICookieFileHandler
     {
         private String _content;
 
@@ -17,8 +17,8 @@ namespace AngleSharp.Io.Cookie
         /// <param name="initialContent">The optional initial content.</param>
         public MemoryFileHandler(String initialContent = "") => _content = initialContent;
 
-        String IFileHandler.ReadFile() => _content;
+        String ICookieFileHandler.ReadFile() => _content;
 
-        void IFileHandler.WriteFile(String content) => _content = content;
+        void ICookieFileHandler.WriteFile(String content) => _content = content;
     }
 }

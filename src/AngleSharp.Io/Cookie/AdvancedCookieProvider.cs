@@ -15,7 +15,7 @@ namespace AngleSharp.Io.Cookie
     /// </summary>
     public class AdvancedCookieProvider : ICookieProvider
     {
-        private readonly IFileHandler _handler;
+        private readonly ICookieFileHandler _handler;
         private readonly Boolean _forceParse;
         private readonly Boolean _httpOnlyExtension;
         private readonly List<WebCookie> _cookies;
@@ -25,7 +25,7 @@ namespace AngleSharp.Io.Cookie
         /// </summary>
         /// <param name="handler">The handler responsible for file system interaction.</param>
         /// <param name="options">The options to use for the cookie provider.</param>
-        public AdvancedCookieProvider(IFileHandler handler, AdvancedCookieProviderOptions options = default)
+        public AdvancedCookieProvider(ICookieFileHandler handler, AdvancedCookieProviderOptions options = default)
         {
             _handler = handler;
             _forceParse = options.IsForceParse;

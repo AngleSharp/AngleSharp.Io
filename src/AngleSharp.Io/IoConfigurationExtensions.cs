@@ -120,7 +120,7 @@ namespace AngleSharp
         /// <param name="configuration">The configuration to extend.</param>
         /// <param name="fileHandler">The handler for the cookie source.</param>
         /// <returns>The new instance with the service.</returns>
-        public static IConfiguration WithCookies(this IConfiguration configuration, IFileHandler fileHandler) =>
+        public static IConfiguration WithCookies(this IConfiguration configuration, ICookieFileHandler fileHandler) =>
             configuration.WithCookies(new AdvancedCookieProvider(fileHandler));
 
         /// <summary>
