@@ -14,6 +14,8 @@ AngleSharp.Io extends AngleSharp with powerful requesters, caching mechanisms, a
 
 ## Basic Configuration
 
+### Requesters
+
 If you just want to use *all* available requesters provided by AngleSharp.Io you can do the following:
 
 ```cs
@@ -23,6 +25,64 @@ var config = Configuration.Default
 ```
 
 This will register all requesters. Alternatively, the requesters can be provided explicitly. They are located in the `AngleSharp.Io.Network` namespace and have names such as `DataRequester`.
+
+### Cookies
+
+To get improved cookie support, e.g., do
+
+```cs
+var config = Configuration.Default
+    .WithTemporaryCookies(); // Uses memory cookies
+```
+
+or if you want to have persistent cookies you can use:
+
+```cs
+var syncPath = $"Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)\\anglesharp.cookies";
+var config = Configuration.Default
+    .WithPersistentCookies(syncPath); // Uses sync cookies against the given path
+```
+
+Alternatively, the new overloads for the `WithCookies` extension method can be used.
+
+### Downloads
+
+AngleSharp.Io offers you the possibility of a simplified downloading experience. Just use `WithStandardDownload` to redirect resources to a callback.
+
+In the simplest case you can write:
+
+```cs
+var config = Configuration.Default
+    .WithStandardDownload((fileName, content) =>
+    {
+        // store fileName with the content stream ...
+    });
+```
+
+Alternatively, use `WithDownload`, which allows you to distinguish also on the provided MIME type.
+
+## DOM Extension Methods
+
+The `IHtmlInputElement` interface now has `AppendFile` to easily allow appending files without much trouble.
+
+```cs
+document
+    .QuerySelector<IHtmlInputElement>("input[type=file]")
+    .AppendFile("c:\\example.jpg");
+```
+
+More overloads exist.
+
+Furthermore, the `IUrlUtilities` interface now has `DownloadAsync`.
+
+```cs
+document
+    .QuerySelector<IHtmlAnchorElement>("a#download-document")
+    .DownloadAsync()
+    .SaveToAsync("c:\\example.pdf");
+```
+
+The `SaveToAsync` (as well as the `CopyToAsync`) are extension methods for the `IResponse` interface.
 
 ## Features
 
@@ -34,6 +94,8 @@ This will register all requesters. Alternatively, the requesters can be provided
   - Enhanced support for about: URLs
 - WebSockets (mostly interesting for scripting engines, e.g., JS)
 - Storage support by providing the `IStorage` interface
+- Improved cookie container (`AdvancedCookieContainer`)
+- Enhanced download capabilities for resources / links
 
 ## Participating
 
