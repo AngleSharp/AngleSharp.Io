@@ -1,4 +1,4 @@
-﻿namespace AngleSharp.Io.Network
+namespace AngleSharp.Io.Network
 {
     using System;
     using System.Net;
@@ -18,9 +18,7 @@
         /// <returns>The task that will eventually give the response data.</returns>
         protected override async Task<IResponse> PerformRequestAsync(Request request, CancellationToken cancel)
         {
-            var requester = FtpWebRequest.Create(request.Address.Href) as FtpWebRequest;
-
-            if (requester != null)
+            if (FtpWebRequest.Create(request.Address.Href) is FtpWebRequest requester)
             {
                 requester.Method = WebRequestMethods.Ftp.DownloadFile;
                 requester.Credentials = new NetworkCredential("anonymous", String.Empty);
@@ -36,7 +34,7 @@
                 };
             }
 
-            return default(IResponse);
+            return default;
         }
 
         /// <summary>
@@ -44,9 +42,7 @@
         /// </summary>
         /// <param name="protocol">The protocol to check for, e.g. ftp.</param>
         /// <returns>True if the protocol is supported, otherwise false.</returns>
-        public override Boolean SupportsProtocol(String protocol)
-        {
-            return protocol.Equals(ProtocolNames.Ftp, StringComparison.OrdinalIgnoreCase);
-        }
+        public override Boolean SupportsProtocol(String protocol) =>
+            protocol.Equals(ProtocolNames.Ftp, StringComparison.OrdinalIgnoreCase);
     }
 }

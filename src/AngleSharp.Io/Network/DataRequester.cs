@@ -1,4 +1,4 @@
-﻿namespace AngleSharp.Io.Network
+namespace AngleSharp.Io.Network
 {
     using AngleSharp.Text;
     using System;
@@ -23,10 +23,8 @@
         /// <summary>Checks if the data protocol is given.</summary>
         /// <param name="protocol">The protocol to check for data.</param>
         /// <returns>True if data is matched, otherwise false..</returns>
-        public override Boolean SupportsProtocol(String protocol)
-        {
-            return protocol.Is(ProtocolNames.Data);
-        }
+        public override Boolean SupportsProtocol(String protocol) =>
+            protocol.Is(ProtocolNames.Data);
 
         /// <summary>
         /// Performs an asynchronous request that can be cancelled.
