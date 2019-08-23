@@ -1,6 +1,6 @@
 # 0.13.0
 
-(tbd)
+Released on Friday, August 23 2019.
 
 - Added additional configuration extensions
 
