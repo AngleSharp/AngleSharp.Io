@@ -26,6 +26,37 @@ var config = Configuration.Default
 
 This will register all requesters. Alternatively, the requesters can be provided explicitly. They are located in the `AngleSharp.Io.Network` namespace and have names such as `DataRequester`.
 
+Requesters can make use of `HttpClientHandler` instances. Hence using it, e.g., with a proxy is as simple as the following snippet:
+
+```cs
+var handler = new HttpClientHandler
+{
+    Proxy = new WebProxy(myProxyHost, false),
+    PreAuthenticate = true,
+    UseDefaultCredentials = false,
+};
+
+var config = Configuration.Default
+    .WithRequesters(handler) // from AngleSharp.Io with a handler config
+    .WithDefaultLoader();
+```
+
+Alternatively, if you don't want to add all possible requesters, you can also just add a single requester from AngleSharp.Io:
+
+```cs
+var config = Configuration.Default
+    .With(new HttpClientRequester()) // only requester
+    .WithDefaultLoader();
+```
+
+In the code above we now only have a single requester - the `HttpClientRequester` coming from AngleSharp.Io. If we have an `HttpClient` already used somewhere we can actually re-use it:
+
+```cs
+var config = Configuration.Default
+    .With(new HttpClientRequester(myHttpClient)) // re-using the HttpClient instance
+    .WithDefaultLoader();
+```
+
 ### Cookies
 
 To get improved cookie support, e.g., do
