@@ -67,9 +67,9 @@ namespace AngleSharp.Io.Tests.Integration
             var document = await context.OpenAsync(req => req.Content("<a href=\"http://example.com/setup.exe\">Download setup</a>"));
             var linkedDownload = await document.QuerySelector<IHtmlAnchorElement>("a").NavigateAsync();
 
-            Assert.AreEqual("setup.exe", downloadSeen);
             Assert.IsNull(linkedDownload);
             Assert.AreEqual(document, context.Active);
+            Assert.AreEqual("setup.exe", downloadSeen);
         }
     }
 }

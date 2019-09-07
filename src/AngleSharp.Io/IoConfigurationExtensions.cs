@@ -30,7 +30,10 @@ namespace AngleSharp
         {
             var oldFactory = configuration.Services.OfType<IDocumentFactory>().FirstOrDefault();
             var newFactory = new DownloadFactory(oldFactory, download);
-            return configuration.WithOnly<IDocumentFactory>(newFactory);
+            return configuration.WithDefaultLoader(new LoaderOptions
+            {
+                Filter = req => false,
+            }).WithOnly<IDocumentFactory>(newFactory);
         }
 
         /// <summary>
@@ -134,6 +137,16 @@ namespace AngleSharp
             configuration.WithCookies(new MemoryFileHandler());
 
         /// <summary>
+        /// Registers a non-persistent advanced cookie container using the memory-only file
+        /// handler.
+        /// Alias for WithTemporaryCookies().
+        /// </summary>
+        /// <param name="configuration">The configuration to extend.</param>
+        /// <returns>The new instance with the service.</returns>
+        public static IConfiguration WithCookies(this IConfiguration configuration) =>
+            configuration.WithTemporaryCookies();
+
+        /// <summary>
         /// Registers the advanced cookie service.
         /// </summary>
         /// <param name="configuration">The configuration to extend.</param>
@@ -149,7 +162,7 @@ namespace AngleSharp
         /// <param name="provider">The provider for cookie interactions.</param>
         /// <returns>The new instance with the service.</returns>
         public static IConfiguration WithCookies(this IConfiguration configuration, ICookieProvider provider) =>
-            configuration.WithOnly<ICookieProvider>(provider);
+            configuration.WithOnly(provider);
 
         #endregion
     }
