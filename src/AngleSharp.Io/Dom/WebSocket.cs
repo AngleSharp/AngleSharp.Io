@@ -1,4 +1,4 @@
-﻿namespace AngleSharp.Io.Dom
+namespace AngleSharp.Io.Dom
 {
     using AngleSharp.Attributes;
     using AngleSharp.Dom;
@@ -320,28 +320,28 @@
         {
             var evt = new MessageEvent();
             evt.Init(EventNames.Message, false, false, message, _url.Origin, String.Empty, _window);
-            this.Dispatch(evt);
+            Dispatch(evt);
         }
 
         private void OnError(Exception ex)
         {
             var evt = new ErrorEvent();
             evt.Init(EventNames.Error, false, false);
-            this.Dispatch(evt);
+            Dispatch(evt);
         }
 
         private void OnDisconnected()
         {
             var evt = new Event();
             evt.Init(CloseEvent, false, false);
-            this.Dispatch(evt);
+            Dispatch(evt);
         }
 
         private void OnConnected()
         {
             var evt = new Event();
             evt.Init(OpenEvent, false, false);
-            this.Dispatch(evt);
+            Dispatch(evt);
         }
 
         #endregion

@@ -1,4 +1,4 @@
-﻿namespace AngleSharp.Io.Network
+namespace AngleSharp.Io.Network
 {
     using System;
     using System.Collections.Generic;
@@ -37,8 +37,7 @@
         /// <returns>The route, if any.</returns>
         public Func<Request, CancellationToken, Task<IResponse>> GetRoute(String address)
         {
-            var route = default(Func<Request, CancellationToken, Task<IResponse>>);
-            _routes.TryGetValue(address, out route);
+            _routes.TryGetValue(address, out var route);
             return route;
         }
 
@@ -66,10 +65,8 @@
         /// </summary>
         /// <param name="protocol">The protocol to check for, e.g. file.</param>
         /// <returns>True if the protocol is supported, otherwise false.</returns>
-        public override Boolean SupportsProtocol(String protocol)
-        {
-            return protocol.Equals("about", StringComparison.OrdinalIgnoreCase);
-        }
+        public override Boolean SupportsProtocol(String protocol) =>
+            protocol.Equals("about", StringComparison.OrdinalIgnoreCase);
 
         private static String GetAddress(String data)
         {

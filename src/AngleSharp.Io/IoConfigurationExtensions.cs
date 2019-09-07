@@ -30,7 +30,10 @@ namespace AngleSharp
         {
             var oldFactory = configuration.Services.OfType<IDocumentFactory>().FirstOrDefault();
             var newFactory = new DownloadFactory(oldFactory, download);
-            return configuration.WithOnly<IDocumentFactory>(newFactory);
+            return configuration.WithDefaultLoader(new LoaderOptions
+            {
+                Filter = req => false,
+            }).WithOnly<IDocumentFactory>(newFactory);
         }
 
         /// <summary>
@@ -82,7 +85,7 @@ namespace AngleSharp
         public static IConfiguration WithRequesters(this IConfiguration configuration, HttpMessageHandler httpMessageHandler)
         {
             var httpClient = new HttpClient(httpMessageHandler);
-            return configuration.With(new Object[]
+            return configuration.With(new IRequester[]
             {
                 new HttpClientRequester(httpClient),
                 new DataRequester(),
@@ -91,6 +94,25 @@ namespace AngleSharp
                 new AboutRequester(),
             });
         }
+
+        /// <summary>
+        /// Adds the given requester to the configuration.
+        /// </summary>
+        /// <typeparam name="T">The type of the requester to add.</typeparam>
+        /// <param name="configuration">The configuration to use.</param>
+        /// <param name="requester">The requester instance to add.</param>
+        /// <returns>The new configuration.</returns>
+        public static IConfiguration WithRequester<T>(this IConfiguration configuration, T requester)
+            where T : IRequester => configuration.With(requester);
+
+        /// <summary>
+        /// Adds a new requester of the provided type to the configuration.
+        /// </summary>
+        /// <typeparam name="T">The type of the requester to add.</typeparam>
+        /// <param name="configuration">The configuration to use.</param>
+        /// <returns>The new configuration.</returns>
+        public static IConfiguration WithRequester<T>(this IConfiguration configuration)
+            where T: IRequester, new() => configuration.WithRequester(new T());
 
         #endregion
 
@@ -115,6 +137,16 @@ namespace AngleSharp
             configuration.WithCookies(new MemoryFileHandler());
 
         /// <summary>
+        /// Registers a non-persistent advanced cookie container using the memory-only file
+        /// handler.
+        /// Alias for WithTemporaryCookies().
+        /// </summary>
+        /// <param name="configuration">The configuration to extend.</param>
+        /// <returns>The new instance with the service.</returns>
+        public static IConfiguration WithCookies(this IConfiguration configuration) =>
+            configuration.WithTemporaryCookies();
+
+        /// <summary>
         /// Registers the advanced cookie service.
         /// </summary>
         /// <param name="configuration">The configuration to extend.</param>
@@ -130,7 +162,7 @@ namespace AngleSharp
         /// <param name="provider">The provider for cookie interactions.</param>
         /// <returns>The new instance with the service.</returns>
         public static IConfiguration WithCookies(this IConfiguration configuration, ICookieProvider provider) =>
-            configuration.WithOnly<ICookieProvider>(provider);
+            configuration.WithOnly(provider);
 
         #endregion
     }

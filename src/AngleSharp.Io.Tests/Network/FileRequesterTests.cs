@@ -55,8 +55,7 @@ namespace AngleSharp.Io.Tests.Network
             var context = BrowsingContext.New(config);
             var document = await context.OpenAsync(res => res.Content("<a href='" + url + "'>Download</a>"));
             var result = await document.QuerySelector<IHtmlAnchorElement>("a").NavigateAsync();
-            var content = result.Body.TextContent;
-            Assert.AreEqual(0, content.Length);
+            Assert.IsNull(result);
         }
     }
 }

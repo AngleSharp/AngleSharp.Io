@@ -1,4 +1,4 @@
-﻿namespace AngleSharp.Io.Network
+namespace AngleSharp.Io.Network
 {
     using System;
     using System.Collections.Generic;
@@ -52,11 +52,9 @@
         /// <returns>
         /// True if the protocol is supported, otherwise false.
         /// </returns>
-        public override Boolean SupportsProtocol(String protocol)
-        {
-            return protocol.Equals(ProtocolNames.Http, StringComparison.OrdinalIgnoreCase) ||
-                   protocol.Equals(ProtocolNames.Https, StringComparison.OrdinalIgnoreCase);
-        }
+        public override Boolean SupportsProtocol(String protocol) =>
+            protocol.Equals(ProtocolNames.Http, StringComparison.OrdinalIgnoreCase) ||
+            protocol.Equals(ProtocolNames.Https, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
         /// Performs an asynchronous request that can be cancelled.

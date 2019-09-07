@@ -1,4 +1,4 @@
-﻿namespace AngleSharp.Io.Tests.Network
+namespace AngleSharp.Io.Tests.Network
 {
     using AngleSharp.Dom;
     using AngleSharp.Html.Dom;
@@ -43,8 +43,7 @@
             var context = BrowsingContext.New(config);
             var document = await context.OpenAsync(res => res.Content("<a href='ftp://ftp.funet.fi/pub/standards/w3/TR/2003/xhtml2-20030506/attributes.html'>Download</a>"));
             var result = await document.QuerySelector<IHtmlAnchorElement>("a").NavigateAsync();
-            var content = result.Body.TextContent;
-            Assert.AreEqual(0, content.Length);
+            Assert.IsNull(result);
         }
     }
 }
