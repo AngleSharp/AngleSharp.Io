@@ -169,6 +169,7 @@ namespace AngleSharp.Io.Cookie
             {
                 _cookies.Remove(FindCookie(cookie.Domain, cookie.Path, cookie.Key));
                 InsertCookie(cookie);
+                WriteCookies();
             }
         }
 
@@ -251,7 +252,6 @@ namespace AngleSharp.Io.Cookie
             }
 
             _cookies.Add(cookie);
-            WriteCookies();
         }
 
         private void WriteCookies()

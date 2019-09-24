@@ -72,14 +72,29 @@ namespace AngleSharp
         /// <param name="configuration">The configuration to use.</param>
         /// <returns>The new configuration.</returns>
         public static IConfiguration WithRequesters(this IConfiguration configuration) =>
-            configuration.WithRequesters(new HttpClientHandler { UseCookies = false, AllowAutoRedirect = false });
+            configuration.WithRequesters(new HttpClientHandler());
+
+        /// <summary>
+        /// Adds the requesters from the AngleSharp.Io package.
+        /// </summary>
+        /// <param name="configuration">The configuration to use.</param>
+        /// <param name="httpClientHandler">
+        /// The HTTP client handler to use for sending requests.
+        /// </param>
+        /// <returns>The new configuration.</returns>
+        public static IConfiguration WithRequesters(this IConfiguration configuration, HttpClientHandler httpClientHandler)
+        {
+            httpClientHandler.UseCookies = false;
+            httpClientHandler.AllowAutoRedirect = false;
+            return configuration.WithRequesters((HttpMessageHandler)httpClientHandler);
+        }
 
         /// <summary>
         /// Adds the requesters from the AngleSharp.Io package.
         /// </summary>
         /// <param name="configuration">The configuration to use.</param>
         /// <param name="httpMessageHandler">
-        /// The HTTP handler stack to use for sending requests.
+        /// The HTTP message handler to use for sending requests.
         /// </param>
         /// <returns>The new configuration.</returns>
         public static IConfiguration WithRequesters(this IConfiguration configuration, HttpMessageHandler httpMessageHandler)
