@@ -1,3 +1,10 @@
+# 0.13.1
+
+Released on Tuesday, September 24 2019.
+
+- Ignore non-existing cookie file when reading
+- Write cookies after every add operation
+
 # 0.13.0
 
 Released on Friday, September 6 2019.
