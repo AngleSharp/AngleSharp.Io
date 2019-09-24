@@ -17,7 +17,8 @@ namespace AngleSharp.Io.Cookie
         /// <param name="filePath">The path to resolve to.</param>
         public LocalFileHandler(String filePath) => _filePath = filePath;
 
-        String ICookieFileHandler.ReadFile() => File.ReadAllText(_filePath);
+        String ICookieFileHandler.ReadFile() => File.Exists(_filePath) ?
+            File.ReadAllText(_filePath) : String.Empty;
 
         void ICookieFileHandler.WriteFile(String content)
         {
