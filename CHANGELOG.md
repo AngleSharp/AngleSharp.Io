@@ -1,3 +1,9 @@
+# 0.14.0
+
+Released on Monday, January 6 2020.
+
+- Added support for .net framework 4.6
+
 # 0.13.1
 
 Released on Tuesday, September 24 2019.

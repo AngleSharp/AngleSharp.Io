@@ -4,6 +4,7 @@ var solutionName = "AngleSharp.Io";
 var frameworks = new Dictionary<String, String>
 {
     { "netstandard2.0", "netstandard2.0" },
+    { "net46", "net46" },
 };
 
 #load tools/anglesharp.cake
