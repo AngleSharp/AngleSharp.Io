@@ -1,3 +1,12 @@
+# 0.14.0
+
+Released on Tuesday, March 31 2020.
+
+- Added support for .NET framework 4.6
+- Added support for .NET framework 4.6.1
+- Added support for .NET framework 4.7.2
+- Added shallow support for source link
+
 # 0.13.1
 
 Released on Tuesday, September 24 2019.
