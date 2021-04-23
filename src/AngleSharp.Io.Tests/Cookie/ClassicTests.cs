@@ -258,6 +258,7 @@ namespace AngleSharp.Io.Tests.Cookie
         }
 
         [Test]
+        [Ignore("We should find a replacement for HttpBin.org")]
         public async Task SettingCookieIsPreservedViaRedirect()
         {
             if (Helper.IsNetworkAvailable())

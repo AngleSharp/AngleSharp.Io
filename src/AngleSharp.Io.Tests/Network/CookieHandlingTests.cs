@@ -74,6 +74,7 @@ namespace AngleSharp.Io.Tests.Network
         }
 
         [Test]
+        [Ignore("We should find a replacement for HttpBin.org")]
         public async Task SettingCookieIsPreservedViaRedirect()
         {
             if (Helper.IsNetworkAvailable())
@@ -95,6 +96,7 @@ namespace AngleSharp.Io.Tests.Network
         }
 
         [Test]
+        [Ignore("We should find a replacement for HttpBin.org")]
         public async Task SettingCookieIsPreservedViaRedirectToDifferentProtocol()
         {
             if (Helper.IsNetworkAvailable())
