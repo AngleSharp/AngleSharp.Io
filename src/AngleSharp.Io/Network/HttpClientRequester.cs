@@ -41,6 +41,15 @@ namespace AngleSharp.Io.Network
 
         #endregion
 
+        #region Properties
+
+        /// <summary>
+        /// Gets the used HttpClient for further manipulation.
+        /// </summary>
+        public HttpClient Client => _client;
+
+        #endregion
+
         #region Methods
 
         /// <summary>
@@ -92,36 +101,48 @@ namespace AngleSharp.Io.Network
                 }
             }
 
-            // execute the request
-            var responseMessage = await _client.SendAsync(requestMessage, cancel).ConfigureAwait(false);
-
-            // convert the response
-            var response = new DefaultResponse
+            try
             {
-                Headers = responseMessage.Headers.ToDictionary(p => p.Key, p => String.Join(", ", p.Value)),
-                Address = Url.Convert(responseMessage.RequestMessage.RequestUri),
-                StatusCode = responseMessage.StatusCode
-            };
+                // execute the request
+                var responseMessage = await _client.SendAsync(requestMessage, cancel).ConfigureAwait(false);
 
-            // get the anticipated content
-            var content = responseMessage.Content;
-
-            if (content != null)
-            {
-                response.Content = await content.ReadAsStreamAsync().ConfigureAwait(false);
-
-                foreach (var pair in content.Headers)
+                // convert the response
+                var response = new DefaultResponse
                 {
-                    response.Headers[pair.Key] = String.Join(", ", pair.Value);
+                    Headers = responseMessage.Headers.ToDictionary(p => p.Key, p => String.Join(", ", p.Value)),
+                    Address = Url.Convert(responseMessage.RequestMessage.RequestUri),
+                    StatusCode = responseMessage.StatusCode
+                };
+
+                // get the anticipated content
+                var content = responseMessage.Content;
+
+                if (content != null)
+                {
+                    response.Content = await content.ReadAsStreamAsync().ConfigureAwait(false);
+
+                    foreach (var pair in content.Headers)
+                    {
+                        response.Headers[pair.Key] = String.Join(", ", pair.Value);
+                    }
                 }
-            }
 
-            if (IsRedirected(response) && !response.Headers.ContainsKey(HeaderNames.SetCookie))
+                if (IsRedirected(response) && !response.Headers.ContainsKey(HeaderNames.SetCookie))
+                {
+                    response.Headers[HeaderNames.SetCookie] = String.Empty;
+                }
+
+                return response;
+            }
+            catch (Exception)
             {
-                response.Headers[HeaderNames.SetCookie] = String.Empty;
+                // create a response to avoid failing (#28)
+                return new DefaultResponse
+                {
+                    Address = Url.Convert(request.Address),
+                    StatusCode = 0
+                };
             }
-
-            return response;
         }
 
         private static Boolean IsRedirected(IResponse response)

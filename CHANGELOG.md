@@ -1,3 +1,10 @@
+# 0.15.0
+
+Released on Friday, April 23 2021.
+
+- Added option to specify default request headers (#29)
+- Fixed unhandled exceptions that may break the requester (#28)
+
 # 0.14.0
 
 Released on Tuesday, March 31 2020.
