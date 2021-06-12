@@ -1,3 +1,9 @@
+# 0.16.0
+
+Released on ?.
+
+- Updated to use AngleSharp 0.16
+
 # 0.15.0
 
 Released on Friday, April 23 2021.
