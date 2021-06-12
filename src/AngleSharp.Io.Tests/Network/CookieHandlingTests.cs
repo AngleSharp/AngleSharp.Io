@@ -1,5 +1,6 @@
 namespace AngleSharp.Io.Tests.Network
 {
+    using AngleSharp.Dom;
     using NUnit.Framework;
     using System;
     using System.Threading.Tasks;

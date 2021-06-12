@@ -1,5 +1,6 @@
 namespace AngleSharp.Io.Network.Tests.Integration
 {
+    using AngleSharp.Dom;
     using NUnit.Framework;
     using System.Collections.Generic;
 

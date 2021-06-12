@@ -1,5 +1,6 @@
 namespace AngleSharp.Io.Tests.Network
 {
+    using AngleSharp.Dom;
     using AngleSharp.Io.Network;
     using AngleSharp.Io.Tests.Network.Mocks;
     using FluentAssertions;

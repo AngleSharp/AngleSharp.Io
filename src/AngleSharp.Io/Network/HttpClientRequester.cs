@@ -7,6 +7,7 @@ namespace AngleSharp.Io.Network
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using AngleSharp.Dom;
     using HttpMethod = System.Net.Http.HttpMethod;
 
     /// <summary>
