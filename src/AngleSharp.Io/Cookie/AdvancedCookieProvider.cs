@@ -1,5 +1,6 @@
 namespace AngleSharp.Io.Cookie
 {
+    using AngleSharp.Dom;
     using AngleSharp.Text;
     using System;
     using System.Collections.Generic;

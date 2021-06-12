@@ -1,5 +1,6 @@
 namespace AngleSharp.Io.Tests.Cookie
 {
+    using AngleSharp.Dom;
     using AngleSharp.Io.Cookie;
     using NUnit.Framework;
     using System;

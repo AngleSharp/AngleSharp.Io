@@ -1,5 +1,6 @@
 ﻿namespace AngleSharp.Io.Tests.Network.Mocks
 {
+    using AngleSharp.Dom;
     using AngleSharp.Io.Network;
     using System;
     using System.Collections.Generic;
