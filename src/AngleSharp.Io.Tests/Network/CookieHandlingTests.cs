@@ -70,7 +70,7 @@ namespace AngleSharp.Io.Tests.Network
     ""test"": ""baz""
   }
 }
-".Replace(Environment.NewLine, "\n"), document.Body.TextContent);
+".Replace("\r\n", "\n"), document.Body.TextContent);
             }
         }
 
@@ -92,7 +92,7 @@ namespace AngleSharp.Io.Tests.Network
     ""test"": ""baz""
   }
 }
-".Replace(Environment.NewLine, "\n"), document.Body.TextContent);
+".Replace("\r\n", "\n"), document.Body.TextContent);
             }
         }
 
@@ -114,7 +114,7 @@ namespace AngleSharp.Io.Tests.Network
     ""test"": ""baz""
   }
 }
-".Replace(Environment.NewLine, "\n"), document.Body.TextContent);
+".Replace("\r\n", "\n"), document.Body.TextContent);
             }
         }
     }

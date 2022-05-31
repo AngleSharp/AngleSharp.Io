@@ -251,7 +251,7 @@ namespace AngleSharp.Io.Tests.Cookie
     ""test"": ""baz""
   }
 }
-".Replace(Environment.NewLine, "\n");
+".Replace("\r\n", "\n");
 
                 Assert.AreEqual(expected, document.Body.TextContent);
             }
@@ -275,7 +275,7 @@ namespace AngleSharp.Io.Tests.Cookie
     ""test"": ""baz""
   }
 }
-".Replace(Environment.NewLine, "\n"), document.Body.TextContent);
+".Replace("\r\n", "\n"), document.Body.TextContent);
             }
         }
 
@@ -429,13 +429,14 @@ namespace AngleSharp.Io.Tests.Cookie
             var mcp = new MemoryCookieProvider();
             var config = Configuration.Default.With(mcp).With(requester).WithDefaultLoader();
             var context = BrowsingContext.New(config);
-            var receivedCookieHeader = "THECOOKIE=value1";
+            var setCookie = "THECOOKIE=value1";
+            var receivedCookieHeader = "";
             var url = new Url("http://example.com/path1");
             //request 1: /path1, set a cookie THECOOKIE=value1
             requester.BuildResponse(req => VirtualResponse.Create(r => r
                 .Address("http://example.com/path1")
                 .Content("")
-                .Header(HeaderNames.SetCookie, receivedCookieHeader)));
+                .Header(HeaderNames.SetCookie, setCookie)));
             context.OpenAsync("http://example.com/path1");
             //request 2: /path1/somefile.jsp redirects to /path2/file2.jsp
             requester.BuildResponses(new Func<Request, IResponse>[] {
@@ -452,7 +453,7 @@ namespace AngleSharp.Io.Tests.Cookie
                 }
             });
             context.OpenAsync("http://example.com/path1/somefile.jsp");
-            Assert.AreEqual(String.Empty, receivedCookieHeader);
+            Assert.AreEqual(setCookie, receivedCookieHeader);
         }
 
         private static Task<IDocument> LoadDocumentWithFakeRequesterAndCookie(IResponse initialResponse,
