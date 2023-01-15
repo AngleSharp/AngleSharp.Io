@@ -192,7 +192,7 @@ namespace AngleSharp.Io.Tests.Cookie
         {
             if (Helper.IsNetworkAvailable())
             {
-                var url = "https://httpbin.org/cookies/set?k1=v1";
+                var url = "https://httpbingo.org/cookies/set?k1=v1";
                 var config = Configuration.Default.WithCookies().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 var document = await context.OpenAsync(url);
@@ -206,7 +206,7 @@ namespace AngleSharp.Io.Tests.Cookie
         {
             if (Helper.IsNetworkAvailable())
             {
-                var url = "https://httpbin.org/cookies/set?k2=v2&k1=v1";
+                var url = "https://httpbingo.org/cookies/set?k2=v2&k1=v1";
                 var config = Configuration.Default.WithCookies().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 var document = await context.OpenAsync(url);
@@ -221,7 +221,7 @@ namespace AngleSharp.Io.Tests.Cookie
         {
             if (Helper.IsNetworkAvailable())
             {
-                var url = "https://httpbin.org/cookies/set?test=baz&k2=v2&k1=v1&foo=bar";
+                var url = "https://httpbingo.org/cookies/set?test=baz&k2=v2&k1=v1&foo=bar";
                 var config = Configuration.Default.WithCookies().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 var document = await context.OpenAsync(url);
@@ -236,7 +236,7 @@ namespace AngleSharp.Io.Tests.Cookie
         {
             if (Helper.IsNetworkAvailable())
             {
-                var baseUrl = "https://httpbin.org/cookies";
+                var baseUrl = "https://httpbingo.org/cookies";
                 var url = baseUrl + "/set?test=baz&k2=v2&k1=v1&foo=bar";
                 var config = Configuration.Default.WithCookies().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
@@ -244,12 +244,10 @@ namespace AngleSharp.Io.Tests.Cookie
                 var document = await context.OpenAsync(baseUrl);
 
                 var expected = @"{
-  ""cookies"": {
-    ""foo"": ""bar"", 
-    ""k1"": ""v1"", 
-    ""k2"": ""v2"", 
-    ""test"": ""baz""
-  }
+  ""foo"": ""bar"",
+  ""k1"": ""v1"",
+  ""k2"": ""v2"",
+  ""test"": ""baz""
 }
 ".Replace("\r\n", "\n");
 
@@ -258,22 +256,19 @@ namespace AngleSharp.Io.Tests.Cookie
         }
 
         [Test]
-        [Ignore("We should find a replacement for HttpBin.org")]
         public async Task SettingCookieIsPreservedViaRedirect()
         {
             if (Helper.IsNetworkAvailable())
             {
-                var cookieUrl = "https://httpbin.org/cookies/set?test=baz";
-                var redirectUrl = "https://httpbin.org/redirect-to?url=https%3A%2F%2Fhttpbin.org%2Fcookies";
+                var cookieUrl = "https://httpbingo.org/cookies/set?test=baz";
+                var redirectUrl = "https://httpbingo.org/redirect-to?url=https%3A%2F%2Fhttpbingo.org%2Fcookies";
                 var config = Configuration.Default.WithCookies().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 await context.OpenAsync(cookieUrl);
                 var document = await context.OpenAsync(redirectUrl);
 
                 Assert.AreEqual(@"{
-  ""cookies"": {
-    ""test"": ""baz""
-  }
+  ""test"": ""baz""
 }
 ".Replace("\r\n", "\n"), document.Body.TextContent);
             }
