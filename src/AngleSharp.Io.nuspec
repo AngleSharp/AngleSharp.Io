@@ -8,6 +8,7 @@
     <license type="expression">MIT</license>
     <projectUrl>https://anglesharp.github.io</projectUrl>
     <icon>logo.png</icon>
+    <readme>README.md</readme>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Providers additional requesters and IO helpers for AngleSharp.</description>
     <releaseNotes>https://github.com/AngleSharp/AngleSharp.Io/blob/main/CHANGELOG.md</releaseNotes>
