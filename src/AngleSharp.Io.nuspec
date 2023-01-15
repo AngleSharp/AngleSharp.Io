@@ -11,10 +11,10 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Providers additional requesters and IO helpers for AngleSharp.</description>
     <releaseNotes>https://github.com/AngleSharp/AngleSharp.Io/blob/main/CHANGELOG.md</releaseNotes>
-    <copyright>Copyright 2016-2022, AngleSharp</copyright>
+    <copyright>Copyright 2016-2023, AngleSharp</copyright>
     <tags>html html5 css css3 dom requester http https io filesystem storage httpclient cache</tags>
     <dependencies>
-      <dependency id="AngleSharp" version="0.17.0" />
+      <dependency id="AngleSharp" version="[1.0,2.0)" />
     </dependencies>
   </metadata>
 </package>

@@ -1,0 +1,71 @@
+V |                      | ArgumentsFromParametersFile.OnBuildCreated (150)
+V |                      | Passing value for Build.Solution (src/AngleSharp.Io.sln)
+V |                      | InjectParameterValues.OnBuildCreated (100)
+V |                      | HandleShellCompletion.OnBuildCreated (75)
+V |                      | GenerateBuildServerConfigurations.OnBuildCreated (50)
+V |                      | InvokeBuildServerConfigurationGeneration.OnBuildCreated (45)
+V |                      | UpdateNotification.OnBuildCreated (10)
+V |                      | UnsetVisualStudioEnvironmentVariables.OnBuildCreated (0)
+V |                      | HandleVisualStudioDebugging.OnBuildCreated (0)
+V |                      | HandleSingleFileExecution.OnBuildCreated (-50)
+V |                      | EventInvoker.OnBuildCreated (-3.4028235E+38)
+V |                      | HandleHelpRequests.OnBuildInitialized (5)
+V |                      | Telemetry.OnBuildInitialized (0)
+V |                      | InjectNonParameterValues.OnBuildInitialized (-100)
+V |                      | EventInvoker.OnBuildInitialized (-3.4028235E+38)
+D |                      | Reading ChangeLog E:\Code\AngleSharp\AngleSharp.Io\CHANGELOG.md...
+D |                      | Using LastestVersion from ChangeLog: 1.0.0
+I |                      | Building version: 1.0.0
+I |                      | Target Framework(s): ["netstandard2.0", "net461", "net472", "net6.0", "net7.0"]
+V | Restore              | EventInvoker.OnTargetRunning (-3.4028235E+38)
+I | Restore              | > "C:\Program Files\dotnet\dotnet.exe" restore E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io.sln
+D | Restore              |   Determining projects to restore...
+D | Restore              |   Restored E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\AngleSharp.Io.csproj (in 230 ms).
+D | Restore              |   Restored E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io.Tests\AngleSharp.Io.Tests.csproj (in 1,51 sec).
+V | Restore              | Telemetry.OnTargetSucceeded (0)
+V | Restore              | EventInvoker.OnTargetSucceeded (-3.4028235E+38)
+V | Compile              | EventInvoker.OnTargetRunning (-3.4028235E+38)
+I | Compile              | > "C:\Program Files\dotnet\dotnet.exe" build E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io.sln --configuration Debug --no-restore
+D | Compile              | MSBuild version 17.4.0+18d5aef85 for .NET
+W | Compile              | E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\Network\FtpRequester.cs(21,17): warning SYSLIB0014: 'WebRequest.Create(string)' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.' [E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\AngleSharp.Io.csproj::TargetFramework=net6.0]
+W | Compile              | E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\Network\FileRequester.cs(21,17): warning SYSLIB0014: 'WebRequest.Create(string)' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.' [E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\AngleSharp.Io.csproj::TargetFramework=net6.0]
+W | Compile              | E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\Network\FtpRequester.cs(21,17): warning SYSLIB0014: 'WebRequest.Create(string)' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.' [E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\AngleSharp.Io.csproj::TargetFramework=net7.0]
+W | Compile              | E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\Network\FileRequester.cs(21,17): warning SYSLIB0014: 'WebRequest.Create(string)' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.' [E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\AngleSharp.Io.csproj::TargetFramework=net7.0]
+D | Compile              |   AngleSharp.Io -> E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\bin\Debug\net7.0\AngleSharp.Io.dll
+D | Compile              |   AngleSharp.Io -> E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\bin\Debug\net461\AngleSharp.Io.dll
+D | Compile              |   AngleSharp.Io -> E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\bin\Debug\net472\AngleSharp.Io.dll
+D | Compile              |   AngleSharp.Io -> E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\bin\Debug\net6.0\AngleSharp.Io.dll
+D | Compile              |   AngleSharp.Io -> E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\bin\Debug\netstandard2.0\AngleSharp.Io.dll
+W | Compile              | E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io.Tests\Network\HttpClientRequesterTests.cs(37,13): warning CS0618: 'HttpRequestMessage.Properties' is obsolete: 'HttpRequestMessage.Properties has been deprecated. Use Options instead.' [E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io.Tests\AngleSharp.Io.Tests.csproj::TargetFramework=net6.0]
+W | Compile              | E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io.Tests\Network\HttpClientRequesterTests.cs(56,13): warning CS0618: 'HttpRequestMessage.Properties' is obsolete: 'HttpRequestMessage.Properties has been deprecated. Use Options instead.' [E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io.Tests\AngleSharp.Io.Tests.csproj::TargetFramework=net6.0]
+D | Compile              |   AngleSharp.Io.Tests -> E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io.Tests\bin\Debug\net6.0\AngleSharp.Io.Tests.dll
+D | Compile              | 
+D | Compile              | Build succeeded.
+D | Compile              | 
+W | Compile              | E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\Network\FtpRequester.cs(21,17): warning SYSLIB0014: 'WebRequest.Create(string)' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.' [E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\AngleSharp.Io.csproj::TargetFramework=net6.0]
+W | Compile              | E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\Network\FileRequester.cs(21,17): warning SYSLIB0014: 'WebRequest.Create(string)' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.' [E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\AngleSharp.Io.csproj::TargetFramework=net6.0]
+W | Compile              | E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\Network\FtpRequester.cs(21,17): warning SYSLIB0014: 'WebRequest.Create(string)' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.' [E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\AngleSharp.Io.csproj::TargetFramework=net7.0]
+W | Compile              | E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\Network\FileRequester.cs(21,17): warning SYSLIB0014: 'WebRequest.Create(string)' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.' [E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io\AngleSharp.Io.csproj::TargetFramework=net7.0]
+W | Compile              | E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io.Tests\Network\HttpClientRequesterTests.cs(37,13): warning CS0618: 'HttpRequestMessage.Properties' is obsolete: 'HttpRequestMessage.Properties has been deprecated. Use Options instead.' [E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io.Tests\AngleSharp.Io.Tests.csproj::TargetFramework=net6.0]
+W | Compile              | E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io.Tests\Network\HttpClientRequesterTests.cs(56,13): warning CS0618: 'HttpRequestMessage.Properties' is obsolete: 'HttpRequestMessage.Properties has been deprecated. Use Options instead.' [E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io.Tests\AngleSharp.Io.Tests.csproj::TargetFramework=net6.0]
+D | Compile              |     6 Warning(s)
+D | Compile              |     0 Error(s)
+D | Compile              | 
+D | Compile              | Time Elapsed 00:00:01.83
+V | Compile              | Telemetry.OnTargetSucceeded (0)
+V | Compile              | EventInvoker.OnTargetSucceeded (-3.4028235E+38)
+V | RunUnitTests         | EventInvoker.OnTargetRunning (-3.4028235E+38)
+I | RunUnitTests         | > "C:\Program Files\dotnet\dotnet.exe" test E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io.sln --configuration Debug --no-build --no-restore
+D | RunUnitTests         | Test run for E:\Code\AngleSharp\AngleSharp.Io\src\AngleSharp.Io.Tests\bin\Debug\net6.0\AngleSharp.Io.Tests.dll (.NETCoreApp,Version=v6.0)
+D | RunUnitTests         | Microsoft (R) Test Execution Command Line Tool Version 17.4.0 (x64)
+D | RunUnitTests         | Copyright (c) Microsoft Corporation.  All rights reserved.
+D | RunUnitTests         | 
+D | RunUnitTests         | Starting test execution, please wait...
+D | RunUnitTests         | A total of 1 test files matched the specified pattern.
+D | RunUnitTests         |   Skipped SettingCookieIsPreservedViaRedirect [< 1 ms]
+D | RunUnitTests         |   Skipped SettingCookieIsPreservedViaRedirect [< 1 ms]
+D | RunUnitTests         |   Skipped SettingCookieIsPreservedViaRedirectToDifferentProtocol [< 1 ms]
+D | RunUnitTests         | 
+D | RunUnitTests         | Passed!  - Failed:     0, Passed:   102, Skipped:     3, Total:   105, Duration: 14 s - AngleSharp.Io.Tests.dll (net6.0)
+V | RunUnitTests         | Telemetry.OnTargetSucceeded (0)
+V | RunUnitTests         | EventInvoker.OnTargetSucceeded (-3.4028235E+38)
