@@ -4,8 +4,10 @@ namespace AngleSharp.Io.Tests.Cookie
     using AngleSharp.Dom;
     using AngleSharp.Html.Dom;
     using AngleSharp.Io.Tests.Mocks;
+    using Newtonsoft.Json.Linq;
     using NUnit.Framework;
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
     using System.Threading;
@@ -136,8 +138,10 @@ namespace AngleSharp.Io.Tests.Cookie
         [Test]
         public async Task SettingOneExpiredCookieAndAFutureCookieInRequestDoAppearInDocument()
         {
+            var year = DateTime.Today.Year + 1;
+            var dayOfWeek = new DateTime(year, 1, 28).ToString("ddd", CultureInfo.InvariantCulture);
             var cookie = await LoadDocumentWithCookie(
-                "cookie=expiring; Expires=Tue, 10 Nov 2009 23:00:00 GMT, foo=bar; Expires=Tue, 28 Jan 2025 13:37:00 GMT");
+                $"cookie=expiring; Expires=Tue, 10 Nov 2009 23:00:00 GMT, foo=bar; Expires={dayOfWeek}, 28 Jan {year} 13:37:00 GMT");
             Assert.AreEqual("foo=bar", cookie);
         }
 
@@ -243,15 +247,11 @@ namespace AngleSharp.Io.Tests.Cookie
                 await context.OpenAsync(url);
                 var document = await context.OpenAsync(baseUrl);
 
-                var expected = @"{
-  ""foo"": ""bar"",
-  ""k1"": ""v1"",
-  ""k2"": ""v2"",
-  ""test"": ""baz""
-}
-".Replace("\r\n", "\n");
-
-                Assert.AreEqual(expected, document.Body.TextContent);
+                AssertCookies(document.Body.TextContent,
+                    new KeyValuePair<String, String>("foo", "bar"),
+                    new KeyValuePair<String, String>("k1", "v1"),
+                    new KeyValuePair<String, String>("k2", "v2"),
+                    new KeyValuePair<String, String>("test", "baz"));
             }
         }
 
@@ -267,10 +267,8 @@ namespace AngleSharp.Io.Tests.Cookie
                 await context.OpenAsync(cookieUrl);
                 var document = await context.OpenAsync(redirectUrl);
 
-                Assert.AreEqual(@"{
-  ""test"": ""baz""
-}
-".Replace("\r\n", "\n"), document.Body.TextContent);
+                AssertCookies(document.Body.TextContent,
+                        new KeyValuePair<String, String>("test", "baz"));
             }
         }
 
@@ -475,6 +473,20 @@ namespace AngleSharp.Io.Tests.Cookie
         {
             var document = await LoadDocumentAloneWithCookie(cookieValue);
             return document.Cookie;
+        }
+
+        private static void AssertCookies(String body, params KeyValuePair<String, String>[] expected)
+        {
+            var parsed = JObject.Parse(body);
+            var source = parsed["cookies"] as JObject ?? parsed;
+            var actual = source.Properties().ToDictionary(m => m.Name, m => m.Value.ToString());
+
+            CollectionAssert.AreEquivalent(expected.Select(m => m.Key), actual.Keys);
+
+            foreach (var pair in expected)
+            {
+                Assert.AreEqual(pair.Value, actual[pair.Key]);
+            }
         }
     }
 }

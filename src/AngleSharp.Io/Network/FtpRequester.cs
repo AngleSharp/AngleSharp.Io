@@ -18,20 +18,25 @@ namespace AngleSharp.Io.Network
         /// <returns>The task that will eventually give the response data.</returns>
         protected override async Task<IResponse> PerformRequestAsync(Request request, CancellationToken cancel)
         {
+            #pragma warning disable SYSLIB0014
             if (FtpWebRequest.Create(request.Address.Href) is FtpWebRequest requester)
+            #pragma warning restore SYSLIB0014
             {
                 requester.Method = WebRequestMethods.Ftp.DownloadFile;
                 requester.Credentials = new NetworkCredential("anonymous", String.Empty);
 
-                var response = await requester.GetResponseAsync().ConfigureAwait(false);
-                var content = response.GetResponseStream();
-
-                return new DefaultResponse
+                using (cancel.Register(requester.Abort))
                 {
-                    Address = request.Address,
-                    Content = content,
-                    StatusCode = HttpStatusCode.OK
-                };
+                    var response = await requester.GetResponseAsync().ConfigureAwait(false);
+                    var content = response.GetResponseStream();
+
+                    return new DefaultResponse
+                    {
+                        Address = request.Address,
+                        Content = content,
+                        StatusCode = HttpStatusCode.OK
+                    };
+                }
             }
 
             return default;
