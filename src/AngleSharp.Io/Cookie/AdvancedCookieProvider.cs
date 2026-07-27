@@ -40,7 +40,7 @@ namespace AngleSharp.Io.Cookie
             var path = String.IsNullOrEmpty(url.Path) ? "/" : $"/{url.Path}";
             var secure = url.Scheme.IsOneOf(ProtocolNames.Https, ProtocolNames.Wss);
             var now = DateTime.UtcNow;
-            var cookies = FindCookies(host, path)
+            var cookies = _cookies
                 .ToArray()
                 .Where(c =>
                 {

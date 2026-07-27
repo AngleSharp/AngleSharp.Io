@@ -3,6 +3,7 @@
 Released on Thursday, July 31 2026.
 
 - Updated to use a minimum of AngleSharp 1.5
+- Fixed domain handling in cookies #36
 
 # 1.0.0
 

@@ -97,6 +97,32 @@ namespace AngleSharp.Io.Tests.Cookie
         }
 
         [Test]
+        public void GettingDottedDomainCookieForSubDomain()
+        {
+            var container = CreateContainerWithSetup(c =>
+            {
+                var url = new Url("http://example.com/index.html");
+                c.SetCookie(url, "a=b; Domain=.example.com; Path=/");
+            });
+            var cookieHeader = ((ICookieProvider)container).GetCookie(new Url("http://www.example.com/home"));
+
+            Assert.AreEqual("a=b", cookieHeader);
+        }
+
+        [Test]
+        public void DomainCookieDoesNotMatchSuffixLookalike()
+        {
+            var container = CreateContainerWithSetup(c =>
+            {
+                var url = new Url("http://example.com/index.html");
+                c.SetCookie(url, "a=b; Domain=.example.com; Path=/");
+            });
+            var cookieHeader = ((ICookieProvider)container).GetCookie(new Url("http://notexample.com/home"));
+
+            Assert.AreEqual(String.Empty, cookieHeader);
+        }
+
+        [Test]
         public void SimpleCookie()
         {
             var cookie = WebCookie.FromString("a=bcd");
