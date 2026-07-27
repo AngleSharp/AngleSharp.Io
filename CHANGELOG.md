@@ -1,3 +1,9 @@
+# 1.1.0
+
+Released on Thursday, July 31 2026.
+
+- Updated to use a minimum of AngleSharp 1.5
+
 # 1.0.0
 
 Released on Sunday, January 15 2023.
