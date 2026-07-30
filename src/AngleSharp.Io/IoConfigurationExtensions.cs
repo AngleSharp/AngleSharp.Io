@@ -5,6 +5,7 @@ namespace AngleSharp
     using AngleSharp.Io.Cookie;
     using AngleSharp.Io.Dom;
     using AngleSharp.Io.Network;
+    using AngleSharp.Io.Storage;
     using System;
     using System.IO;
     using System.Linq;
@@ -183,6 +184,20 @@ namespace AngleSharp
         #endregion
 
         #region Storage
+
+        /// <summary>
+        /// Registers a storage provider factory.
+        /// </summary>
+        /// <param name="configuration">The configuration to extend.</param>
+        /// <param name="syncDirectoryPath">The directory path for local storage synchronization.</param>
+        /// <returns>The new instance with the service.</returns>
+        public static IConfiguration WithStorageProviderFactory(this IConfiguration configuration, String syncDirectoryPath)
+        {
+            var factory = new StorageProviderFactory();
+            factory.EnableLocalStorage(syncDirectoryPath);
+            factory.EnableSessionStorage();
+            return configuration.WithStorageProviderFactory(factory);
+        }
 
         /// <summary>
         /// Registers a storage provider factory.
