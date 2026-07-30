@@ -15,15 +15,21 @@ namespace AngleSharp.Io.Dom
         /// </summary>
         [DomName("localStorage")]
         [DomAccessor(Accessors.Getter)]
-        public static ILocalStorage LocalStorage(this IWindow window) =>
-            window.Document.Context?.GetService<ILocalStorage>();
+        public static ILocalStorage LocalStorage(this IWindow window)
+        {
+            var factory = window?.Document?.Context?.GetService<IStorageProviderFactory>();
+            return factory?.GetStorages(window)?.Local;
+        }
         
         /// <summary>
         /// Gets the sessionStorage object.
         /// </summary>
         [DomName("sessionStorage")]
         [DomAccessor(Accessors.Getter)]
-        public static ISessionStorage SessionStorage(this IWindow window) =>
-            window.Document.Context?.GetService<ISessionStorage>();
+        public static ISessionStorage SessionStorage(this IWindow window)
+        {
+            var factory = window?.Document?.Context?.GetService<IStorageProviderFactory>();
+            return factory?.GetStorages(window)?.Session;
+        }
     }
 }

@@ -78,37 +78,30 @@ Alternatively, the new overloads for the `WithCookies` extension method can be u
 
 ### Storage
 
-AngleSharp.Io provides implementations for both `sessionStorage`-style and
-`localStorage`-style storage.
+AngleSharp.Io provides a single storage engine with two storage modes:
 
-To register in-memory session storage:
+- `localStorage` using persistent per-origin files
+- `sessionStorage` using in-memory per-origin buckets
 
-```cs
-var config = Configuration.Default
-    .WithSessionStorage();
-```
-
-To register local storage persisted to disk:
+To configure storage, create and register an `IStorageProviderFactory`:
 
 ```cs
-var syncPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "anglesharp.storage");
-var config = Configuration.Default
-    .WithLocalStorage(syncPath);
-```
+var syncDirectoryPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "anglesharp.storage");
+var factory = new StorageProviderFactory();
 
-To register both at once:
+factory.EnableLocalStorage(syncDirectoryPath);
+factory.EnableSessionStorage();
 
-```cs
-var config = Configuration.Default
-    .WithStorages(syncPath);
+var config = Configuration.Default.WithStorageProviderFactory(factory);
 ```
 
 Once configured, storage services can be resolved from the browsing context:
 
 ```cs
 var context = BrowsingContext.New(config);
-var localStorage = context.GetLocalStorage();
-var sessionStorage = context.GetSessionStorage();
+var document = await context.OpenAsync("https://example.org");
+var localStorage = document.DefaultView.GetLocalStorage();
+var sessionStorage = document.DefaultView.GetSessionStorage();
 
 localStorage["token"] = "abc";
 sessionStorage["ephemeral"] = "42";
@@ -162,7 +155,7 @@ The `SaveToAsync` (as well as the `CopyToAsync`) are extension methods for the `
   - Supporting file URLs
   - Enhanced support for about: URLs
 - WebSockets (mostly interesting for scripting engines, e.g., JS)
-- Storage support with `LocalStorage` and `SessionStorage` implementations
+- Storage support with a unified `Storage` implementation
 - Improved cookie container (`AdvancedCookieContainer`)
 - Enhanced download capabilities for resources / links
 

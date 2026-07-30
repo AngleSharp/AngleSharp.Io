@@ -5,7 +5,6 @@ namespace AngleSharp
     using AngleSharp.Io.Cookie;
     using AngleSharp.Io.Dom;
     using AngleSharp.Io.Network;
-    using AngleSharp.Io.Storage;
     using System;
     using System.IO;
     using System.Linq;
@@ -186,48 +185,13 @@ namespace AngleSharp
         #region Storage
 
         /// <summary>
-        /// Registers a persistent local storage service using sync against the given path.
+        /// Registers a storage provider factory.
         /// </summary>
         /// <param name="configuration">The configuration to extend.</param>
-        /// <param name="syncFilePath">The path to the required sync file.</param>
+        /// <param name="factory">The storage provider factory to use.</param>
         /// <returns>The new instance with the service.</returns>
-        public static IConfiguration WithLocalStorage(this IConfiguration configuration, String syncFilePath) =>
-            configuration.WithLocalStorage(new LocalStorage(syncFilePath));
-
-        /// <summary>
-        /// Registers the local storage service.
-        /// </summary>
-        /// <param name="configuration">The configuration to extend.</param>
-        /// <param name="storage">The local storage implementation.</param>
-        /// <returns>The new instance with the service.</returns>
-        public static IConfiguration WithLocalStorage(this IConfiguration configuration, ILocalStorage storage) =>
-            configuration.WithOnly<ILocalStorage>(_ => storage);
-
-        /// <summary>
-        /// Registers a non-persistent session storage service.
-        /// </summary>
-        /// <param name="configuration">The configuration to extend.</param>
-        /// <returns>The new instance with the service.</returns>
-        public static IConfiguration WithSessionStorage(this IConfiguration configuration) =>
-            configuration.WithSessionStorage(new SessionStorage());
-
-        /// <summary>
-        /// Registers the session storage service.
-        /// </summary>
-        /// <param name="configuration">The configuration to extend.</param>
-        /// <param name="storage">The session storage implementation.</param>
-        /// <returns>The new instance with the service.</returns>
-        public static IConfiguration WithSessionStorage(this IConfiguration configuration, ISessionStorage storage) =>
-            configuration.WithOnly<ISessionStorage>(_ => storage);
-
-        /// <summary>
-        /// Registers both local and session storage services.
-        /// </summary>
-        /// <param name="configuration">The configuration to extend.</param>
-        /// <param name="syncFilePath">The path to the required local storage sync file.</param>
-        /// <returns>The new instance with both services.</returns>
-        public static IConfiguration WithStorages(this IConfiguration configuration, String syncFilePath) =>
-            configuration.WithLocalStorage(syncFilePath).WithSessionStorage();
+        public static IConfiguration WithStorageProviderFactory(this IConfiguration configuration, IStorageProviderFactory factory) =>
+            configuration.WithOnly<IStorageProviderFactory>(_ => factory);
 
         #endregion
     }

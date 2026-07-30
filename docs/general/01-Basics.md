@@ -94,39 +94,31 @@ Alternatively, the new overloads for the `WithCookies` extension method can be u
 
 ### Storage
 
-AngleSharp.Io contains two `IStorage` implementations:
+AngleSharp.Io contains a single `Storage` implementation that is exposed as
+`localStorage` and `sessionStorage` depending on the configured handler:
 
-- `SessionStorage` (in-memory)
-- `LocalStorage` (file-synced)
+- local storage uses persistent per-origin files
+- session storage uses in-memory per-origin buckets
 
-Register session storage:
-
-```cs
-var config = Configuration.Default
-    .WithSessionStorage();
-```
-
-Register local storage with sync to disk:
+Register storage by providing a storage provider factory:
 
 ```cs
-var syncPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "anglesharp.storage");
-var config = Configuration.Default
-    .WithLocalStorage(syncPath);
-```
+var syncDirectoryPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "anglesharp.storage");
+var factory = new StorageProviderFactory();
 
-Register both:
+factory.EnableLocalStorage(syncDirectoryPath);
+factory.EnableSessionStorage();
 
-```cs
-var config = Configuration.Default
-    .WithStorages(syncPath);
+var config = Configuration.Default.WithStorageProviderFactory(factory);
 ```
 
 Use the services from a browsing context:
 
 ```cs
 var context = BrowsingContext.New(config);
-var localStorage = context.GetLocalStorage();
-var sessionStorage = context.GetSessionStorage();
+var document = await context.OpenAsync("https://example.org");
+var localStorage = document.DefaultView.GetLocalStorage();
+var sessionStorage = document.DefaultView.GetSessionStorage();
 
 localStorage["persisted"] = "yes";
 sessionStorage["transient"] = "yes";
