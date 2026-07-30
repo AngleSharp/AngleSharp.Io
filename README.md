@@ -76,6 +76,44 @@ var config = Configuration.Default
 
 Alternatively, the new overloads for the `WithCookies` extension method can be used.
 
+### Storage
+
+AngleSharp.Io provides implementations for both `sessionStorage`-style and
+`localStorage`-style storage.
+
+To register in-memory session storage:
+
+```cs
+var config = Configuration.Default
+    .WithSessionStorage();
+```
+
+To register local storage persisted to disk:
+
+```cs
+var syncPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "anglesharp.storage");
+var config = Configuration.Default
+    .WithLocalStorage(syncPath);
+```
+
+To register both at once:
+
+```cs
+var config = Configuration.Default
+    .WithStorages(syncPath);
+```
+
+Once configured, storage services can be resolved from the browsing context:
+
+```cs
+var context = BrowsingContext.New(config);
+var localStorage = context.GetLocalStorage();
+var sessionStorage = context.GetSessionStorage();
+
+localStorage["token"] = "abc";
+sessionStorage["ephemeral"] = "42";
+```
+
 ### Downloads
 
 AngleSharp.Io offers you the possibility of a simplified downloading experience. Just use `WithStandardDownload` to redirect resources to a callback.
@@ -124,7 +162,7 @@ The `SaveToAsync` (as well as the `CopyToAsync`) are extension methods for the `
   - Supporting file URLs
   - Enhanced support for about: URLs
 - WebSockets (mostly interesting for scripting engines, e.g., JS)
-- Storage support by providing the `IStorage` interface
+- Storage support with `LocalStorage` and `SessionStorage` implementations
 - Improved cookie container (`AdvancedCookieContainer`)
 - Enhanced download capabilities for resources / links
 
