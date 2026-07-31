@@ -154,6 +154,23 @@ var cache = document.DefaultView.Caches().Open("app");
 cache.Put("https://example.org/data", new DefaultResponse());
 ```
 
+### BroadcastChannel
+
+AngleSharp.Io also provides a lightweight BroadcastChannel surface that is shared per origin:
+
+- `BroadcastChannel` delivering `message` events to same-origin channels with the same name
+
+Create a channel from a DOM window:
+
+```cs
+var context = BrowsingContext.New();
+var document = await context.OpenAsync("https://example.org");
+
+using var channel = new BroadcastChannel(document.DefaultView, "app");
+channel.Message += (s, e) => Console.WriteLine(((MessageEvent)e).Data);
+channel.PostMessage("hello");
+```
+
 ### Downloads
 
 AngleSharp.Io offers you the possibility of a simplified downloading experience. Just use `WithStandardDownload` to redirect resources to a callback.

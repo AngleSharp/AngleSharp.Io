@@ -7,6 +7,7 @@ Released on Friday, July 31 2026.
 - Added `localStorage` and `sessionStorage` for web storages
 - Added `indexedDB` using an IndexedDB implementation
 - Added `caches` using a Cache API implementation
+- Added `BroadcastChannel`
 
 # 1.0.0
 
