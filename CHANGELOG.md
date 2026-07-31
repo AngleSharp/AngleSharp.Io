@@ -5,6 +5,7 @@ Released on Friday, July 31 2026.
 - Updated to use a minimum of AngleSharp 1.5
 - Fixed domain handling in cookies #36
 - Added the `Navigator` from *AngleSharp.Js*
+- Added the `XmlHttpRequester` from *AngleSharp.Js*
 - Added `localStorage` and `sessionStorage` for web storages
 - Added `indexedDB` using an IndexedDB implementation
 - Added `caches` using a Cache API implementation
