@@ -107,6 +107,53 @@ localStorage["token"] = "abc";
 sessionStorage["ephemeral"] = "42";
 ```
 
+### IndexedDB
+
+AngleSharp.Io also provides a lightweight IndexedDB surface that is shared per origin:
+
+- `indexedDB` using in-memory databases and object stores scoped to the origin
+
+To configure IndexedDB, create and register an `IIndexedDbProviderFactory`:
+
+```cs
+var factory = new IndexedDbProviderFactory();
+var config = Configuration.Default.WithIndexedDbProviderFactory(factory);
+```
+
+Once configured, IndexedDB services can be resolved from the browsing context:
+
+```cs
+var context = BrowsingContext.New(config);
+var document = await context.OpenAsync("https://example.org");
+var database = document.DefaultView.IndexedDb().Open("app");
+var store = database.CreateObjectStore("records");
+
+store["token"] = "abc";
+```
+
+### Cache Storage
+
+AngleSharp.Io also exposes a lightweight Cache Storage surface that is shared per origin:
+
+- `caches` using in-memory caches and response snapshots scoped to the origin
+
+To configure Cache Storage, create and register an `ICacheProviderFactory`:
+
+```cs
+var factory = new CacheProviderFactory();
+var config = Configuration.Default.WithCacheProviderFactory(factory);
+```
+
+Once configured, caches can be resolved from the browsing context:
+
+```cs
+var context = BrowsingContext.New(config);
+var document = await context.OpenAsync("https://example.org");
+var cache = document.DefaultView.Caches().Open("app");
+
+cache.Put("https://example.org/data", new DefaultResponse());
+```
+
 ### Downloads
 
 AngleSharp.Io offers you the possibility of a simplified downloading experience. Just use `WithStandardDownload` to redirect resources to a callback.

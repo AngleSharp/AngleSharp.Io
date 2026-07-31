@@ -124,6 +124,53 @@ localStorage["persisted"] = "yes";
 sessionStorage["transient"] = "yes";
 ```
 
+### IndexedDB
+
+AngleSharp.Io also exposes a lightweight IndexedDB surface that is shared per origin:
+
+- `indexedDB` using in-memory databases and object stores scoped to the origin
+
+Register IndexedDB by providing a provider factory:
+
+```cs
+var factory = new IndexedDbProviderFactory();
+var config = Configuration.Default.WithIndexedDbProviderFactory(factory);
+```
+
+Use the service from a browsing context:
+
+```cs
+var context = BrowsingContext.New(config);
+var document = await context.OpenAsync("https://example.org");
+var database = document.DefaultView.IndexedDb().Open("app");
+var store = database.CreateObjectStore("records");
+
+store["persisted"] = "yes";
+```
+
+### Cache Storage
+
+AngleSharp.Io also exposes a lightweight Cache Storage surface that is shared per origin:
+
+- `caches` using in-memory caches and response snapshots scoped to the origin
+
+Register Cache Storage by providing a provider factory:
+
+```cs
+var factory = new CacheProviderFactory();
+var config = Configuration.Default.WithCacheProviderFactory(factory);
+```
+
+Use the service from a browsing context:
+
+```cs
+var context = BrowsingContext.New(config);
+var document = await context.OpenAsync("https://example.org");
+var cache = document.DefaultView.Caches().Open("app");
+
+cache.Put("https://example.org/data", new DefaultResponse());
+```
+
 ### Downloads
 
 AngleSharp.Io offers you the possibility of a simplified downloading experience. Just use `WithStandardDownload` to redirect resources to a callback.

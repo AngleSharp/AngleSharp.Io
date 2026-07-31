@@ -31,5 +31,27 @@ namespace AngleSharp.Io.Dom
             var factory = window?.Document?.Context?.GetService<IStorageProviderFactory>();
             return factory?.GetStorages(window)?.Session;
         }
+
+        /// <summary>
+        /// Gets the indexedDB object.
+        /// </summary>
+        [DomName("indexedDB")]
+        [DomAccessor(Accessors.Getter)]
+        public static IIndexedDbFactory IndexedDb(this IWindow window)
+        {
+            var factory = window?.Document?.Context?.GetService<IIndexedDbProviderFactory>();
+            return factory?.GetIndexedDb(window);
+        }
+
+        /// <summary>
+        /// Gets the caches object.
+        /// </summary>
+        [DomName("caches")]
+        [DomAccessor(Accessors.Getter)]
+        public static ICacheStorage Caches(this IWindow window)
+        {
+            var factory = window?.Document?.Context?.GetService<ICacheProviderFactory>();
+            return factory?.GetCaches(window);
+        }
     }
 }

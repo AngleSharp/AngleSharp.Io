@@ -4,6 +4,7 @@ namespace AngleSharp
     using AngleSharp.Io;
     using AngleSharp.Io.Cookie;
     using AngleSharp.Io.Dom;
+    using AngleSharp.Io.IndexedDb;
     using AngleSharp.Io.Network;
     using AngleSharp.Io.Storage;
     using System;
@@ -207,6 +208,32 @@ namespace AngleSharp
         /// <returns>The new instance with the service.</returns>
         public static IConfiguration WithStorageProviderFactory(this IConfiguration configuration, IStorageProviderFactory factory) =>
             configuration.WithOnly<IStorageProviderFactory>(_ => factory);
+
+        #endregion
+
+        #region IndexedDb
+
+        /// <summary>
+        /// Registers an IndexedDB provider factory.
+        /// </summary>
+        /// <param name="configuration">The configuration to extend.</param>
+        /// <param name="factory">The IndexedDB provider factory to use.</param>
+        /// <returns>The new instance with the service.</returns>
+        public static IConfiguration WithIndexedDbProviderFactory(this IConfiguration configuration, IIndexedDbProviderFactory factory) =>
+            configuration.WithOnly<IIndexedDbProviderFactory>(_ => factory);
+
+        #endregion
+
+        #region Cache
+
+        /// <summary>
+        /// Registers a Cache Storage provider factory.
+        /// </summary>
+        /// <param name="configuration">The configuration to extend.</param>
+        /// <param name="factory">The Cache Storage provider factory to use.</param>
+        /// <returns>The new instance with the service.</returns>
+        public static IConfiguration WithCacheProviderFactory(this IConfiguration configuration, ICacheProviderFactory factory) =>
+            configuration.WithOnly<ICacheProviderFactory>(_ => factory);
 
         #endregion
     }
