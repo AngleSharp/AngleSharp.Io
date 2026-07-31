@@ -288,6 +288,37 @@ var geolocation = navigator.Geolocation();
 var position = await geolocation.GetCurrentPosition();
 ```
 
+### Fetch
+
+AngleSharp.Io also exposes a `fetch` method on `window`:
+
+- `fetch` delegates to the configured `IDocumentLoader`
+
+Configure requesters and a default loader:
+
+```cs
+var config = Configuration.Default
+    .WithRequesters()
+    .WithDefaultLoader();
+```
+
+Use fetch from a DOM window:
+
+```cs
+var context = BrowsingContext.New(config);
+var document = await context.OpenAsync("https://example.org");
+
+var response = await document.DefaultView.Fetch("/api/data", new FetchOptions
+{
+    Method = "POST",
+    Headers = new Dictionary<string, string>
+    {
+        ["X-Requested-With"] = "AngleSharp.Io"
+    },
+    Body = "payload"
+});
+```
+
 ### Downloads
 
 AngleSharp.Io offers you the possibility of a simplified downloading experience. Just use `WithStandardDownload` to redirect resources to a callback.
