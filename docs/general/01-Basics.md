@@ -98,7 +98,7 @@ AngleSharp.Io contains a single `Storage` implementation that is exposed as
 `localStorage` and `sessionStorage` depending on the configured handler:
 
 - local storage uses persistent per-origin files
-- session storage uses in-memory per-origin buckets
+- session storage uses in-memory buckets scoped to the top-level browsing context and origin
 
 Register storage by providing a storage provider factory:
 
@@ -117,8 +117,8 @@ Use the services from a browsing context:
 ```cs
 var context = BrowsingContext.New(config);
 var document = await context.OpenAsync("https://example.org");
-var localStorage = document.DefaultView.GetLocalStorage();
-var sessionStorage = document.DefaultView.GetSessionStorage();
+var localStorage = document.DefaultView.LocalStorage();
+var sessionStorage = document.DefaultView.SessionStorage();
 
 localStorage["persisted"] = "yes";
 sessionStorage["transient"] = "yes";

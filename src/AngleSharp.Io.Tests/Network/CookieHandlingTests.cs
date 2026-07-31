@@ -60,7 +60,7 @@ namespace AngleSharp.Io.Tests.Network
             {
                 var baseUrl = "https://httpbingo.org/cookies";
                 var url = baseUrl + "/set?test=baz&k2=v2&k1=v1&foo=bar";
-                                var config = Configuration.Default.WithCookies().WithDefaultLoader();
+                var config = Configuration.Default.WithCookies().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 await context.OpenAsync(url);
                 var document = await context.OpenAsync(baseUrl);

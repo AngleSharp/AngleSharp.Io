@@ -1,5 +1,7 @@
 namespace AngleSharp.Io.Tests.Storage
 {
+    using AngleSharp;
+    using AngleSharp.Browser;
     using AngleSharp.Dom;
     using AngleSharp.Io.Dom;
     using AngleSharp.Io.Storage;
@@ -161,29 +163,26 @@ namespace AngleSharp.Io.Tests.Storage
         }
 
         [Test]
-        public async Task SessionStorageIsAlsoOriginDependentAcrossWindows()
+        public async Task LocalStorageSharesStateWithinTheSameBrowsingContextTree()
         {
             var directory = Path.Combine(Path.GetTempPath(), $"anglesharp-io-storage-{Guid.NewGuid():N}");
 
             try
             {
                 var config = CreateConfigWithStorages(directory);
-                var contextA = BrowsingContext.New(config);
-                var contextB = BrowsingContext.New(config);
-                var contextC = BrowsingContext.New(config);
+                var parentContext = BrowsingContext.New(config);
+                var childContext = parentContext.CreateChild("child", Sandboxes.None);
+                var parallelContext = BrowsingContext.New(config);
 
-                var windowA = await OpenWindowAsync(contextA, "https://alpha.example/");
-                var windowB = await OpenWindowAsync(contextB, "https://alpha.example/other");
-                var windowC = await OpenWindowAsync(contextC, "https://beta.example/");
+                var parentWindow = await OpenWindowAsync(parentContext, "https://alpha.example/");
+                var childWindow = await OpenWindowAsync(childContext, "https://alpha.example/frame");
+                var parallelWindow = await OpenWindowAsync(parallelContext, "https://alpha.example/");
 
-                var localA = windowA.LocalStorage();
-                var localB = windowB.LocalStorage();
-                var localC = windowC.LocalStorage();
+                var localStorage = parentWindow.LocalStorage();
+                localStorage["token"] = "x";
 
-                localA["id"] = "alpha";
-
-                Assert.AreEqual("alpha", localB["id"]);
-                Assert.AreEqual(null, localC["id"]);
+                Assert.AreEqual("x", childWindow.LocalStorage()["token"]);
+                Assert.AreEqual("x", parallelWindow.LocalStorage()["token"]);
             }
             finally
             {
@@ -195,7 +194,50 @@ namespace AngleSharp.Io.Tests.Storage
         }
 
         [Test]
-        public async Task SessionStorageSharesStateForSameOrigin()
+        public async Task LocalStorageFiresStorageEventToOtherSameOriginWindows()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), $"anglesharp-io-storage-{Guid.NewGuid():N}");
+
+            try
+            {
+                var config = CreateConfigWithStorages(directory);
+                var parentContext = BrowsingContext.New(config);
+                var childContext = parentContext.CreateChild("child", Sandboxes.None);
+                var parallelContext = BrowsingContext.New(config);
+
+                var parentWindow = await OpenWindowAsync(parentContext, "https://alpha.example/");
+                var childWindow = await OpenWindowAsync(childContext, "https://alpha.example/frame");
+                var parallelWindow = await OpenWindowAsync(parallelContext, "https://alpha.example/");
+
+                var parentStorage = parentWindow.LocalStorage();
+                childWindow.LocalStorage();
+                parallelWindow.LocalStorage();
+
+                var parentEvents = 0;
+                var childEvents = 0;
+                var parallelEvents = 0;
+
+                parentWindow.AddEventListener(EventNames.Storage, (_, __) => parentEvents++, false);
+                childWindow.AddEventListener(EventNames.Storage, (_, __) => childEvents++, false);
+                parallelWindow.AddEventListener(EventNames.Storage, (_, __) => parallelEvents++, false);
+
+                parentStorage["token"] = "x";
+
+                Assert.AreEqual(0, parentEvents);
+                Assert.AreEqual(1, childEvents);
+                Assert.AreEqual(1, parallelEvents);
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
+        [Test]
+        public async Task SessionStorageIsIsolatedAcrossParallelBrowsingContexts()
         {
             var directory = Path.Combine(Path.GetTempPath(), $"anglesharp-io-storage-{Guid.NewGuid():N}");
 
@@ -207,13 +249,92 @@ namespace AngleSharp.Io.Tests.Storage
 
                 var windowA = await OpenWindowAsync(contextA, "https://alpha.example/");
                 var windowB = await OpenWindowAsync(contextB, "https://alpha.example/");
+
                 var sessionA = windowA.SessionStorage();
                 var sessionB = windowB.SessionStorage();
 
                 sessionA["sid"] = "1";
 
                 Assert.AreEqual("1", sessionA["sid"]);
-                Assert.AreEqual("1", sessionB["sid"]);
+                Assert.AreEqual(null, sessionB["sid"]);
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
+        [Test]
+        public async Task SessionStorageFiresStorageEventOnlyWithinTheSameBrowsingContextTree()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), $"anglesharp-io-storage-{Guid.NewGuid():N}");
+
+            try
+            {
+                var config = CreateConfigWithStorages(directory);
+                var parentContext = BrowsingContext.New(config);
+                var childContext = parentContext.CreateChild("child", Sandboxes.None);
+                var parallelContext = BrowsingContext.New(config);
+
+                var parentWindow = await OpenWindowAsync(parentContext, "https://alpha.example/");
+                var childWindow = await OpenWindowAsync(childContext, "https://alpha.example/frame");
+                var parallelWindow = await OpenWindowAsync(parallelContext, "https://alpha.example/");
+
+                var parentStorage = parentWindow.SessionStorage();
+                childWindow.SessionStorage();
+                parallelWindow.SessionStorage();
+
+                var parentEvents = 0;
+                var childEvents = 0;
+                var parallelEvents = 0;
+
+                parentWindow.AddEventListener(EventNames.Storage, (_, __) => parentEvents++, false);
+                childWindow.AddEventListener(EventNames.Storage, (_, __) => childEvents++, false);
+                parallelWindow.AddEventListener(EventNames.Storage, (_, __) => parallelEvents++, false);
+
+                parentStorage["sid"] = "1";
+
+                Assert.AreEqual(0, parentEvents);
+                Assert.AreEqual(1, childEvents);
+                Assert.AreEqual(0, parallelEvents);
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
+        [Test]
+        public async Task SessionStorageSharesWithinTheSameBrowsingContextTree()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), $"anglesharp-io-storage-{Guid.NewGuid():N}");
+
+            try
+            {
+                var config = CreateConfigWithStorages(directory);
+                var parentContext = BrowsingContext.New(config);
+                var childContext = parentContext.CreateChild("child", Sandboxes.None);
+                var parallelContext = BrowsingContext.New(config);
+
+                var parentWindow = await OpenWindowAsync(parentContext, "https://alpha.example/");
+                var childWindow = await OpenWindowAsync(childContext, "https://alpha.example/frame");
+                var parallelWindow = await OpenWindowAsync(parallelContext, "https://alpha.example/");
+
+                var parentSession = parentWindow.SessionStorage();
+                var childSession = childWindow.SessionStorage();
+                var parallelSession = parallelWindow.SessionStorage();
+
+                parentSession["sid"] = "1";
+
+                Assert.AreEqual("1", parentSession["sid"]);
+                Assert.AreEqual("1", childSession["sid"]);
+                Assert.AreEqual(null, parallelSession["sid"]);
             }
             finally
             {

@@ -12,6 +12,7 @@ namespace AngleSharp.Io.Storage
         private readonly Func<String> _getOrigin;
         private readonly Func<String, StorageBucket> _getBucket;
         private readonly Action<String, StorageBucket> _persist;
+        private readonly Action<String, StorageBucket, String, String, String> _persistWithMutation;
 
         /// <summary>
         /// Creates a new storage view.
@@ -20,10 +21,29 @@ namespace AngleSharp.Io.Storage
         /// <param name="getBucket">Gets the storage bucket for the given origin.</param>
         /// <param name="persist">Persists the bucket for the given origin.</param>
         public Storage(Func<String> getOrigin, Func<String, StorageBucket> getBucket, Action<String, StorageBucket> persist)
+            : this(getOrigin, getBucket, persist, null)
+        {
+        }
+
+        /// <summary>
+        /// Creates a new storage view.
+        /// </summary>
+        /// <param name="getOrigin">Gets the current origin.</param>
+        /// <param name="getBucket">Gets the storage bucket for the given origin.</param>
+        /// <param name="persist">Persists the bucket for the given origin.</param>
+        public Storage(Func<String> getOrigin, Func<String, StorageBucket> getBucket, Action<String, StorageBucket, String, String, String> persist)
+        {
+            _getOrigin = getOrigin ?? throw new ArgumentNullException(nameof(getOrigin));
+            _getBucket = getBucket ?? throw new ArgumentNullException(nameof(getBucket));
+            _persistWithMutation = persist;
+        }
+
+        private Storage(Func<String> getOrigin, Func<String, StorageBucket> getBucket, Action<String, StorageBucket> persist, Action<String, StorageBucket, String, String, String> persistWithMutation)
         {
             _getOrigin = getOrigin ?? throw new ArgumentNullException(nameof(getOrigin));
             _getBucket = getBucket ?? throw new ArgumentNullException(nameof(getBucket));
             _persist = persist;
+            _persistWithMutation = persistWithMutation;
         }
 
         /// <inheritdoc />
@@ -45,8 +65,9 @@ namespace AngleSharp.Io.Storage
 
                 var origin = CurrentOrigin;
                 var bucket = _getBucket.Invoke(origin);
+                var oldValue = bucket.Get(key);
                 bucket.Set(key, value);
-                _persist?.Invoke(origin, bucket);
+                Persist(origin, bucket, key, oldValue, value);
             }
         }
 
@@ -60,8 +81,12 @@ namespace AngleSharp.Io.Storage
 
             var origin = CurrentOrigin;
             var bucket = _getBucket.Invoke(origin);
-            bucket.Remove(key);
-            _persist?.Invoke(origin, bucket);
+            var oldValue = bucket.Get(key);
+
+            if (bucket.Remove(key))
+            {
+                Persist(origin, bucket, key, oldValue, null);
+            }
         }
 
         /// <inheritdoc />
@@ -69,13 +94,30 @@ namespace AngleSharp.Io.Storage
         {
             var origin = CurrentOrigin;
             var bucket = _getBucket.Invoke(origin);
+
+            if (bucket.Length == 0)
+            {
+                return;
+            }
+
             bucket.Clear();
-            _persist?.Invoke(origin, bucket);
+            Persist(origin, bucket, null, null, null);
         }
 
         private String CurrentOrigin => _getOrigin.Invoke() ?? String.Empty;
 
         private StorageBucket CurrentBucket => _getBucket.Invoke(CurrentOrigin);
+
+        private void Persist(String origin, StorageBucket bucket, String key, String oldValue, String newValue)
+        {
+            if (_persistWithMutation != null)
+            {
+                _persistWithMutation(origin, bucket, key, oldValue, newValue);
+                return;
+            }
+
+            _persist?.Invoke(origin, bucket);
+        }
     }
 
     /// <summary>
@@ -165,12 +207,15 @@ namespace AngleSharp.Io.Storage
         /// Removes the given key.
         /// </summary>
         /// <param name="key">The key to remove.</param>
-        public void Remove(String key)
+        public Boolean Remove(String key)
         {
             if (_entries.Remove(key))
             {
                 _keys.Remove(key);
+                return true;
             }
+
+            return false;
         }
 
         /// <summary>

@@ -81,7 +81,7 @@ Alternatively, the new overloads for the `WithCookies` extension method can be u
 AngleSharp.Io provides a single storage engine with two storage modes:
 
 - `localStorage` using persistent per-origin files
-- `sessionStorage` using in-memory per-origin buckets
+- `sessionStorage` using in-memory buckets scoped to the top-level browsing context and origin
 
 To configure storage, create and register an `IStorageProviderFactory`:
 
@@ -100,8 +100,8 @@ Once configured, storage services can be resolved from the browsing context:
 ```cs
 var context = BrowsingContext.New(config);
 var document = await context.OpenAsync("https://example.org");
-var localStorage = document.DefaultView.GetLocalStorage();
-var sessionStorage = document.DefaultView.GetSessionStorage();
+var localStorage = document.DefaultView.LocalStorage();
+var sessionStorage = document.DefaultView.SessionStorage();
 
 localStorage["token"] = "abc";
 sessionStorage["ephemeral"] = "42";
