@@ -10,6 +10,8 @@ namespace AngleSharp.Io.Dom
     /// Represents the BroadcastChannel interface.
     /// </summary>
     [DomName("BroadcastChannel")]
+    [DomExposed("Window")]
+    [DomExposed("Worker")]
     public sealed class BroadcastChannel : EventTarget, IDisposable
     {
         private readonly String _name;

@@ -8,6 +8,7 @@ Released on Friday, July 31 2026.
 - Added `indexedDB` using an IndexedDB implementation
 - Added `caches` using a Cache API implementation
 - Added `BroadcastChannel`
+- Added `locks` using the `LockManager` web locks spec
 
 # 1.0.0
 

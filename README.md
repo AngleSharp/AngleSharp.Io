@@ -171,6 +171,27 @@ channel.Message += (s, e) => Console.WriteLine(((MessageEvent)e).Data);
 channel.PostMessage("hello");
 ```
 
+### Web Locks
+
+AngleSharp.Io also provides a minimal Web Locks surface that serializes requests per origin and lock name:
+
+- `locks` using in-memory request queues scoped to the origin
+
+Create a lock manager from a navigator implementation:
+
+```cs
+var context = BrowsingContext.New();
+var document = await context.OpenAsync("https://example.org");
+var navigator = document.DefaultView.Navigator;
+var locks = navigator.Locks();
+
+await locks.Request("app", async _ =>
+{
+    Console.WriteLine("inside the lock");
+    await Task.CompletedTask;
+});
+```
+
 ### Downloads
 
 AngleSharp.Io offers you the possibility of a simplified downloading experience. Just use `WithStandardDownload` to redirect resources to a callback.
@@ -222,6 +243,7 @@ The `SaveToAsync` (as well as the `CopyToAsync`) are extension methods for the `
 - Storage support with a unified `Storage` implementation
 - Improved cookie container (`AdvancedCookieContainer`)
 - Enhanced download capabilities for resources / links
+- Web Locks support for origin-scoped request serialization
 
 ## Participating
 
