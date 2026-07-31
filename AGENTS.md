@@ -8,7 +8,7 @@ cookie handling, download support, and some DOM/network helpers for headless bro
 
 ## Commands
 
-The orchestrator is NUKE (`nuke/Build.cs`), bootstrapped by `build.ps1` / `build.sh`
+The orchestrator is Fallout (`build/Build.cs`), bootstrapped by `build.ps1` / `build.sh`
 (`build.cmd` forwards to either). Default target is `RunUnitTests`.
 
 ```powershell
@@ -17,7 +17,7 @@ The orchestrator is NUKE (`nuke/Build.cs`), bootstrapped by `build.ps1` / `build
 .\build.ps1 -Target Package        #   CopyFiles CreatePackage Package PrePublish Publish
 ```
 
-For the normal edit/test loop use the SDK directly — much faster than the NUKE bootstrap:
+For the normal edit/test loop use the SDK directly — much faster than the Fallout bootstrap:
 
 ```powershell
 dotnet build src/AngleSharp.Io.sln
@@ -109,7 +109,7 @@ These files are synced from the `AngleSharp.GitBase` repository and should not b
 here: `.editorconfig`, `.gitignore`, `.gitattributes`, `.github/*`, `build.ps1`, `build.sh`,
 `tools/*`, `LICENSE`.
 
-CI (`.github/workflows/ci.yml`) builds on Linux and Windows; on Windows it selects the NUKE
+CI (`.github/workflows/ci.yml`) builds on Linux and Windows; on Windows it selects the Fallout
 target from the branch (`main` → `Publish`, `devel` → `PrePublish`, otherwise the default).
 `CONTRIBUTING.md` asks for feature branches (`feature/#777`) and pull requests against
 `devel`.

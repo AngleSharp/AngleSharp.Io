@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AngleSharp.Io", "AngleSharp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AngleSharp.Io.Tests", "AngleSharp.Io.Tests\AngleSharp.Io.Tests.csproj", "{18B0B97B-8795-4DC2-A1E7-8070255BE718}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "..\build\_build.csproj", "{07DA52AA-8F6F-4F43-B09E-6AE899E95E43}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
