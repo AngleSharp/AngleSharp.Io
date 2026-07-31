@@ -1,8 +1,8 @@
 namespace AngleSharp.Io.Tests.Clipboard
 {
     using AngleSharp;
+    using AngleSharp.Browser.Dom;
     using AngleSharp.Io.Dom;
-    using AngleSharp.Io.Tests.Mocks;
     using NUnit.Framework;
     using System;
     using System.Threading.Tasks;
@@ -14,8 +14,8 @@ namespace AngleSharp.Io.Tests.Clipboard
         public async Task ClipboardCanBeResolvedFromNavigatorWhenRegistered()
         {
             var platform = new FakeClipboardPlatform();
-            var context = await OpenContextAsync(Configuration.Default.WithClipboard(platform), "https://clipboard.example/").ConfigureAwait(false);
-            var navigator = new FakeNavigator(context);
+            var context = await OpenContextAsync(Configuration.Default.WithNavigator().WithClipboard(platform), "https://clipboard.example/").ConfigureAwait(false);
+            var navigator = GetNavigator(context);
 
             Assert.IsNotNull(navigator.Clipboard());
         }
@@ -24,8 +24,8 @@ namespace AngleSharp.Io.Tests.Clipboard
         public async Task ClipboardWriteTextUsesPlatformImplementation()
         {
             var platform = new FakeClipboardPlatform();
-            var context = await OpenContextAsync(Configuration.Default.WithClipboard(platform), "https://clipboard.example/").ConfigureAwait(false);
-            var navigator = new FakeNavigator(context);
+            var context = await OpenContextAsync(Configuration.Default.WithNavigator().WithClipboard(platform), "https://clipboard.example/").ConfigureAwait(false);
+            var navigator = GetNavigator(context);
             var clipboard = navigator.Clipboard();
 
             await clipboard.WriteText("copied").ConfigureAwait(false);
@@ -41,8 +41,8 @@ namespace AngleSharp.Io.Tests.Clipboard
                 CurrentText = "from-platform"
             };
 
-            var context = await OpenContextAsync(Configuration.Default.WithClipboard(platform), "https://clipboard.example/").ConfigureAwait(false);
-            var navigator = new FakeNavigator(context);
+            var context = await OpenContextAsync(Configuration.Default.WithNavigator().WithClipboard(platform), "https://clipboard.example/").ConfigureAwait(false);
+            var navigator = GetNavigator(context);
             var clipboard = navigator.Clipboard();
 
             var value = await clipboard.ReadText().ConfigureAwait(false);
@@ -55,6 +55,13 @@ namespace AngleSharp.Io.Tests.Clipboard
             var context = BrowsingContext.New(configuration);
             await context.OpenAsync(res => res.Address(address).Content("<!doctype html><title>clipboard</title>")).ConfigureAwait(false);
             return context;
+        }
+
+        private static INavigator GetNavigator(IBrowsingContext context)
+        {
+            var navigator = context?.Active?.DefaultView?.Navigator;
+            Assert.IsNotNull(navigator);
+            return navigator;
         }
 
         private sealed class FakeClipboardPlatform : IClipboardPlatform

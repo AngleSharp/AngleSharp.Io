@@ -3,7 +3,6 @@ namespace AngleSharp.Io.Dom
     using AngleSharp.Browser.Dom;
     using AngleSharp.Attributes;
     using System;
-    using System.Reflection;
 
     /// <summary>
     /// Defines a set of extensions for the navigator object.
@@ -55,36 +54,7 @@ namespace AngleSharp.Io.Dom
 
         private static AngleSharp.IBrowsingContext GetContext(INavigator navigator)
         {
-            if (navigator == null)
-            {
-                return null;
-            }
-
-            var type = navigator.GetType();
-            var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-            var property = type.GetProperty("Context", flags);
-
-            if (property?.GetValue(navigator) is AngleSharp.IBrowsingContext context)
-            {
-                return context;
-            }
-
-            var field = type.GetField("_context", flags);
-
-            if (field?.GetValue(navigator) is AngleSharp.IBrowsingContext fieldContext)
-            {
-                return fieldContext;
-            }
-
-            field = type.GetField("context", flags);
-
-            if (field?.GetValue(navigator) is AngleSharp.IBrowsingContext lowerContext)
-            {
-                return lowerContext;
-            }
-
-            return null;
+            return (navigator as Navigator)?.Context;
         }
     }
 }

@@ -1,8 +1,8 @@
 namespace AngleSharp.Io.Tests.Geolocation
 {
     using AngleSharp;
+    using AngleSharp.Browser.Dom;
     using AngleSharp.Io.Dom;
-    using AngleSharp.Io.Tests.Mocks;
     using NUnit.Framework;
     using System;
     using System.Threading.Tasks;
@@ -14,8 +14,8 @@ namespace AngleSharp.Io.Tests.Geolocation
         public async Task GeolocationCanBeResolvedFromNavigatorWhenRegistered()
         {
             var platform = new FakeGeolocationPlatform();
-            var context = await OpenContextAsync(Configuration.Default.WithGeolocation(platform), "https://geo.example/").ConfigureAwait(false);
-            var navigator = new FakeNavigator(context);
+            var context = await OpenContextAsync(Configuration.Default.WithNavigator().WithGeolocation(platform), "https://geo.example/").ConfigureAwait(false);
+            var navigator = GetNavigator(context);
 
             Assert.IsNotNull(navigator.Geolocation());
         }
@@ -38,8 +38,8 @@ namespace AngleSharp.Io.Tests.Geolocation
                 }
             };
 
-            var context = await OpenContextAsync(Configuration.Default.WithGeolocation(platform), "https://geo.example/").ConfigureAwait(false);
-            var navigator = new FakeNavigator(context);
+            var context = await OpenContextAsync(Configuration.Default.WithNavigator().WithGeolocation(platform), "https://geo.example/").ConfigureAwait(false);
+            var navigator = GetNavigator(context);
             var geolocation = navigator.Geolocation();
 
             var position = await geolocation.GetCurrentPosition().ConfigureAwait(false);
@@ -74,8 +74,8 @@ namespace AngleSharp.Io.Tests.Geolocation
                 MaximumAge = 200,
             };
 
-            var context = await OpenContextAsync(Configuration.Default.WithGeolocation(platform), "https://geo.example/").ConfigureAwait(false);
-            var navigator = new FakeNavigator(context);
+            var context = await OpenContextAsync(Configuration.Default.WithNavigator().WithGeolocation(platform), "https://geo.example/").ConfigureAwait(false);
+            var navigator = GetNavigator(context);
             var geolocation = navigator.Geolocation();
 
             await geolocation.GetCurrentPosition(options).ConfigureAwait(false);
@@ -91,6 +91,13 @@ namespace AngleSharp.Io.Tests.Geolocation
             var context = BrowsingContext.New(configuration);
             await context.OpenAsync(res => res.Address(address).Content("<!doctype html><title>geolocation</title>")).ConfigureAwait(false);
             return context;
+        }
+
+        private static INavigator GetNavigator(IBrowsingContext context)
+        {
+            var navigator = context?.Active?.DefaultView?.Navigator;
+            Assert.IsNotNull(navigator);
+            return navigator;
         }
 
         private sealed class FakeGeolocationPlatform : IGeolocationPlatform

@@ -197,7 +197,8 @@ AngleSharp.Io also provides a lightweight Web Locks surface that serializes requ
 Create a lock manager from a navigator implementation:
 
 ```cs
-var context = BrowsingContext.New();
+var config = Configuration.Default.WithNavigator();
+var context = BrowsingContext.New(config);
 var document = await context.OpenAsync("https://example.org");
 var navigator = document.DefaultView.Navigator;
 var locks = navigator.Locks();
@@ -226,6 +227,14 @@ public sealed class MyClipboardPlatform : IClipboardPlatform
 }
 
 var config = Configuration.Default.WithClipboard(new MyClipboardPlatform());
+```
+
+To expose `navigator`, include navigator registration in the configuration:
+
+```cs
+var config = Configuration.Default
+    .WithNavigator()
+    .WithClipboard(new MyClipboardPlatform());
 ```
 
 Resolve it from `INavigator`:
@@ -261,6 +270,14 @@ public sealed class MyGeolocationPlatform : IGeolocationPlatform
 }
 
 var config = Configuration.Default.WithGeolocation(new MyGeolocationPlatform());
+```
+
+To expose `navigator`, include navigator registration in the configuration:
+
+```cs
+var config = Configuration.Default
+    .WithNavigator()
+    .WithGeolocation(new MyGeolocationPlatform());
 ```
 
 Resolve it from `INavigator`:
