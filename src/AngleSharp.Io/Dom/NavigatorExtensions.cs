@@ -12,6 +12,30 @@ namespace AngleSharp.Io.Dom
     public static class NavigatorExtensions
     {
         /// <summary>
+        /// Gets the clipboard object.
+        /// </summary>
+        [DomName("clipboard")]
+        [DomAccessor(Accessors.Getter)]
+        public static Clipboard Clipboard(this INavigator navigator)
+        {
+            var context = GetContext(navigator);
+            var factory = context?.GetService<IClipboardProviderFactory>();
+            return factory?.GetClipboard(navigator);
+        }
+
+        /// <summary>
+        /// Gets the geolocation object.
+        /// </summary>
+        [DomName("geolocation")]
+        [DomAccessor(Accessors.Getter)]
+        public static Geolocation Geolocation(this INavigator navigator)
+        {
+            var context = GetContext(navigator);
+            var factory = context?.GetService<IGeolocationProviderFactory>();
+            return factory?.GetGeolocation(navigator);
+        }
+
+        /// <summary>
         /// Gets the locks object.
         /// </summary>
         [DomName("locks")]

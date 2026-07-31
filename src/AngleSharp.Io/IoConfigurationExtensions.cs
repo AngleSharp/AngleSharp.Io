@@ -5,8 +5,10 @@ namespace AngleSharp
     using AngleSharp.Io.Cookie;
     using AngleSharp.Io.Dom;
     using AngleSharp.Io.IndexedDb;
+    using AngleSharp.Io.GeolocationApi;
     using AngleSharp.Io.Network;
     using AngleSharp.Io.Storage;
+    using AngleSharp.Io.ClipboardApi;
     using System;
     using System.IO;
     using System.Linq;
@@ -234,6 +236,56 @@ namespace AngleSharp
         /// <returns>The new instance with the service.</returns>
         public static IConfiguration WithCacheProviderFactory(this IConfiguration configuration, ICacheProviderFactory factory) =>
             configuration.WithOnly<ICacheProviderFactory>(_ => factory);
+
+        #endregion
+
+        #region Clipboard
+
+        /// <summary>
+        /// Registers the clipboard service using the given platform implementation.
+        /// </summary>
+        /// <param name="configuration">The configuration to extend.</param>
+        /// <param name="platform">The platform clipboard implementation.</param>
+        /// <returns>The new instance with the service.</returns>
+        public static IConfiguration WithClipboard(this IConfiguration configuration, IClipboardPlatform platform)
+        {
+            var factory = new ClipboardProviderFactory(platform);
+            return configuration.WithClipboardProviderFactory(factory);
+        }
+
+        /// <summary>
+        /// Registers a clipboard provider factory.
+        /// </summary>
+        /// <param name="configuration">The configuration to extend.</param>
+        /// <param name="factory">The clipboard provider factory to use.</param>
+        /// <returns>The new instance with the service.</returns>
+        public static IConfiguration WithClipboardProviderFactory(this IConfiguration configuration, IClipboardProviderFactory factory) =>
+            configuration.WithOnly<IClipboardProviderFactory>(_ => factory);
+
+        #endregion
+
+        #region Geolocation
+
+        /// <summary>
+        /// Registers the geolocation service using the given platform implementation.
+        /// </summary>
+        /// <param name="configuration">The configuration to extend.</param>
+        /// <param name="platform">The platform geolocation implementation.</param>
+        /// <returns>The new instance with the service.</returns>
+        public static IConfiguration WithGeolocation(this IConfiguration configuration, IGeolocationPlatform platform)
+        {
+            var factory = new GeolocationProviderFactory(platform);
+            return configuration.WithGeolocationProviderFactory(factory);
+        }
+
+        /// <summary>
+        /// Registers a geolocation provider factory.
+        /// </summary>
+        /// <param name="configuration">The configuration to extend.</param>
+        /// <param name="factory">The geolocation provider factory to use.</param>
+        /// <returns>The new instance with the service.</returns>
+        public static IConfiguration WithGeolocationProviderFactory(this IConfiguration configuration, IGeolocationProviderFactory factory) =>
+            configuration.WithOnly<IGeolocationProviderFactory>(_ => factory);
 
         #endregion
     }

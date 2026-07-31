@@ -209,6 +209,68 @@ await locks.Request("app", async _ =>
 });
 ```
 
+### Clipboard
+
+AngleSharp.Io provides a navigator clipboard surface backed by a user-supplied platform implementation:
+
+- `clipboard` exposing `readText` / `writeText`
+
+Register a platform implementation during configuration:
+
+```cs
+public sealed class MyClipboardPlatform : IClipboardPlatform
+{
+    public Task<string> ReadTextAsync() => Task.FromResult("sample");
+
+    public Task WriteTextAsync(string text) => Task.CompletedTask;
+}
+
+var config = Configuration.Default.WithClipboard(new MyClipboardPlatform());
+```
+
+Resolve it from `INavigator`:
+
+```cs
+var navigator = document.DefaultView.Navigator;
+var clipboard = navigator.Clipboard();
+
+await clipboard.WriteText("hello");
+var value = await clipboard.ReadText();
+```
+
+### Geolocation
+
+AngleSharp.Io provides a navigator geolocation surface backed by a user-supplied platform implementation:
+
+- `geolocation` exposing `getCurrentPosition`
+
+Register a platform implementation during configuration:
+
+```cs
+public sealed class MyGeolocationPlatform : IGeolocationPlatform
+{
+    public Task<GeolocationReading> GetCurrentPositionAsync(GeolocationOptions options)
+    {
+        return Task.FromResult(new GeolocationReading
+        {
+            Latitude = 52.52,
+            Longitude = 13.405,
+            Accuracy = 8.0,
+        });
+    }
+}
+
+var config = Configuration.Default.WithGeolocation(new MyGeolocationPlatform());
+```
+
+Resolve it from `INavigator`:
+
+```cs
+var navigator = document.DefaultView.Navigator;
+var geolocation = navigator.Geolocation();
+var position = await geolocation.GetCurrentPosition();
+```
+
 ### Downloads
 
 AngleSharp.Io offers you the possibility of a simplified downloading experience. Just use `WithStandardDownload` to redirect resources to a callback.

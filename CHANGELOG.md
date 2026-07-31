@@ -9,6 +9,8 @@ Released on Friday, July 31 2026.
 - Added `caches` using a Cache API implementation
 - Added `BroadcastChannel`
 - Added `locks` using the `LockManager` web locks spec
+- Added `Clipboard` providing the web clipboard API
+- Added `Geolocation` providing the web geolocation API
 
 # 1.0.0
 
