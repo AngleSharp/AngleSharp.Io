@@ -14,6 +14,26 @@ AngleSharp.Io extends AngleSharp with powerful requesters, caching mechanisms, a
 
 ## Basic Configuration
 
+### All-In-One Setup
+
+If you want to register all core AngleSharp.Io services in one step, use `WithIo` with `IoOptions`:
+
+```cs
+var options = new IoOptions
+{
+    // optional; defaults are already provided
+    ClipboardPlatform = myClipboardPlatform,
+    GeolocationPlatform = myGeolocationPlatform,
+};
+
+var config = Configuration.Default
+    .WithIo(options)
+    .WithDefaultLoader();
+```
+
+`WithIo` wires navigator, cookies, requesters, storage, IndexedDB, and cache in one call.
+Clipboard and geolocation are only enabled when platforms are provided.
+
 ### Requesters
 
 If you just want to use *all* available requesters provided by AngleSharp.Io you can do the following:
@@ -76,6 +96,295 @@ var config = Configuration.Default
 
 Alternatively, the new overloads for the `WithCookies` extension method can be used.
 
+### Storage
+
+AngleSharp.Io provides a single storage engine with two storage modes:
+
+- `localStorage` using persistent per-origin files
+- `sessionStorage` using in-memory buckets scoped to the top-level browsing context and origin
+
+To configure storage, create and register an `IStorageProviderFactory`:
+
+```cs
+var syncDirectoryPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "anglesharp.storage");
+var factory = new StorageProviderFactory();
+
+factory.EnableLocalStorage(syncDirectoryPath);
+factory.EnableSessionStorage();
+
+var config = Configuration.Default.WithStorageProviderFactory(factory);
+```
+
+Once configured, storage services can be resolved from the browsing context:
+
+```cs
+var context = BrowsingContext.New(config);
+var document = await context.OpenAsync("https://example.org");
+var localStorage = document.DefaultView.LocalStorage();
+var sessionStorage = document.DefaultView.SessionStorage();
+
+localStorage["token"] = "abc";
+sessionStorage["ephemeral"] = "42";
+```
+
+### IndexedDB
+
+AngleSharp.Io provides an in-memory IndexedDB surface that is shared per origin:
+
+- `indexedDB` using in-memory databases and object stores scoped to the origin
+- versioned open with upgrade callback support
+- explicit transactions (`ReadOnly` / `ReadWrite`) with commit and abort
+- request-style open wrappers (`OpenRequest(...)`)
+- object store record methods (`Add`, `Put`, `Get`, `Delete`, `Count`)
+- key-range queries (`IndexedDbKeyRange`)
+- indexes with optional uniqueness (`CreateIndex`, `GetIndex`, `DeleteIndex`)
+- cursors for store and index iteration (`OpenCursor`)
+- request state (`Pending` / `Success` / `Error` / `Blocked`) and close lifecycle
+- version-change notifications on open connections
+- optional auto-unblock open requests (`OpenRequest(..., waitForUnblock: true)`)
+- request-based delete with optional auto-unblock (`DeleteDatabaseRequest(..., waitForUnblock: true)`)
+- transaction lifecycle state/events (`IsCompleted`, `IsAborted`, `Completed`, `Aborted`)
+- single active read-write transaction per database
+
+To configure IndexedDB, create and register an `IIndexedDbProviderFactory`:
+
+```cs
+var factory = new IndexedDbProviderFactory();
+var config = Configuration.Default.WithIndexedDbProviderFactory(factory);
+```
+
+Once configured, IndexedDB services can be resolved from the browsing context:
+
+```cs
+var context = BrowsingContext.New(config);
+var document = await context.OpenAsync("https://example.org");
+var database = document.DefaultView.IndexedDb().Open("app", 1, tx =>
+{
+    tx.CreateObjectStore("records");
+});
+
+using (var transaction = database.BeginTransaction("records", IndexedDbTransactionMode.ReadWrite))
+{
+    var store = transaction.GetObjectStore("records");
+    var byType = store.CreateIndex("byType", "type");
+
+    store.Add("token", "abc");
+    store.Put("token", "updated");
+
+    var notes = byType.GetAll("note");
+    var range = store.GetAll(IndexedDbKeyRange.Bound("a", "m"));
+
+    transaction.Commit();
+}
+
+var openRequest = document.DefaultView.IndexedDb().OpenRequest("app", 2, tx =>
+{
+    tx.CreateObjectStore("events");
+});
+
+var upgraded = await openRequest.WaitAsync();
+
+var cursor = byType.OpenCursor(IndexedDbKeyRange.Bound("note", "task"));
+
+while (cursor != null)
+{
+    Console.WriteLine(cursor.Value);
+    cursor = cursor.Continue();
+}
+
+database.Close();
+
+var waitingRequest = document.DefaultView.IndexedDb().OpenRequest(
+    "app",
+    3,
+    tx => tx.CreateObjectStore("logs"),
+    waitForUnblock: true);
+
+var upgradedAgain = await waitingRequest.WaitAsync();
+
+var deleteRequest = document.DefaultView.IndexedDb().DeleteDatabaseRequest("app", waitForUnblock: true);
+var deleted = await deleteRequest.WaitAsync();
+
+using (var writeTx = upgradedAgain.BeginTransaction("records", IndexedDbTransactionMode.ReadWrite))
+{
+    writeTx.Completed += () => Console.WriteLine("transaction committed");
+    writeTx.Aborted += () => Console.WriteLine("transaction aborted");
+    writeTx.GetObjectStore("records").Put("k", "v");
+    writeTx.Commit();
+}
+```
+
+### Cache Storage
+
+AngleSharp.Io also exposes a lightweight Cache Storage surface that is shared per origin:
+
+- `caches` using in-memory caches and response snapshots scoped to the origin
+
+To configure Cache Storage, create and register an `ICacheProviderFactory`:
+
+```cs
+var factory = new CacheProviderFactory();
+var config = Configuration.Default.WithCacheProviderFactory(factory);
+```
+
+Once configured, caches can be resolved from the browsing context:
+
+```cs
+var context = BrowsingContext.New(config);
+var document = await context.OpenAsync("https://example.org");
+var cache = document.DefaultView.Caches().Open("app");
+
+cache.Put("https://example.org/data", new DefaultResponse());
+```
+
+### BroadcastChannel
+
+AngleSharp.Io also provides a lightweight BroadcastChannel surface that is shared per origin:
+
+- `BroadcastChannel` delivering `message` events to same-origin channels with the same name
+
+Create a channel from a DOM window:
+
+```cs
+var context = BrowsingContext.New();
+var document = await context.OpenAsync("https://example.org");
+
+using var channel = new BroadcastChannel(document.DefaultView, "app");
+channel.Message += (s, e) => Console.WriteLine(((MessageEvent)e).Data);
+channel.PostMessage("hello");
+```
+
+### Web Locks
+
+AngleSharp.Io also provides a minimal Web Locks surface that serializes requests per origin and lock name:
+
+- `locks` using in-memory request queues scoped to the origin
+
+Create a lock manager from a navigator implementation:
+
+```cs
+var config = Configuration.Default.WithNavigator();
+var context = BrowsingContext.New(config);
+var document = await context.OpenAsync("https://example.org");
+var navigator = document.DefaultView.Navigator;
+var locks = navigator.Locks();
+
+await locks.Request("app", async _ =>
+{
+    Console.WriteLine("inside the lock");
+    await Task.CompletedTask;
+});
+```
+
+### Clipboard
+
+AngleSharp.Io provides a navigator clipboard surface backed by a user-supplied platform implementation:
+
+- `clipboard` exposing `readText` / `writeText`
+
+Register a platform implementation during configuration:
+
+```cs
+public sealed class MyClipboardPlatform : IClipboardPlatform
+{
+    public Task<string> ReadTextAsync() => Task.FromResult("sample");
+
+    public Task WriteTextAsync(string text) => Task.CompletedTask;
+}
+
+var config = Configuration.Default.WithClipboard(new MyClipboardPlatform());
+```
+
+To expose `navigator`, include navigator registration in the configuration:
+
+```cs
+var config = Configuration.Default
+    .WithNavigator()
+    .WithClipboard(new MyClipboardPlatform());
+```
+
+Resolve it from `INavigator`:
+
+```cs
+var navigator = document.DefaultView.Navigator;
+var clipboard = navigator.Clipboard();
+
+await clipboard.WriteText("hello");
+var value = await clipboard.ReadText();
+```
+
+### Geolocation
+
+AngleSharp.Io provides a navigator geolocation surface backed by a user-supplied platform implementation:
+
+- `geolocation` exposing `getCurrentPosition`
+
+Register a platform implementation during configuration:
+
+```cs
+public sealed class MyGeolocationPlatform : IGeolocationPlatform
+{
+    public Task<GeolocationReading> GetCurrentPositionAsync(GeolocationOptions options)
+    {
+        return Task.FromResult(new GeolocationReading
+        {
+            Latitude = 52.52,
+            Longitude = 13.405,
+            Accuracy = 8.0,
+        });
+    }
+}
+
+var config = Configuration.Default.WithGeolocation(new MyGeolocationPlatform());
+```
+
+To expose `navigator`, include navigator registration in the configuration:
+
+```cs
+var config = Configuration.Default
+    .WithNavigator()
+    .WithGeolocation(new MyGeolocationPlatform());
+```
+
+Resolve it from `INavigator`:
+
+```cs
+var navigator = document.DefaultView.Navigator;
+var geolocation = navigator.Geolocation();
+var position = await geolocation.GetCurrentPosition();
+```
+
+### Fetch
+
+AngleSharp.Io also exposes a `fetch` method on `window`:
+
+- `fetch` delegates to the configured `IDocumentLoader`
+
+Configure requesters and a default loader:
+
+```cs
+var config = Configuration.Default
+    .WithRequesters()
+    .WithDefaultLoader();
+```
+
+Use fetch from a DOM window:
+
+```cs
+var context = BrowsingContext.New(config);
+var document = await context.OpenAsync("https://example.org");
+
+var response = await document.DefaultView.Fetch("/api/data", new FetchOptions
+{
+    Method = "POST",
+    Headers = new Dictionary<string, string>
+    {
+        ["X-Requested-With"] = "AngleSharp.Io"
+    },
+    Body = "payload"
+});
+```
+
 ### Downloads
 
 AngleSharp.Io offers you the possibility of a simplified downloading experience. Just use `WithStandardDownload` to redirect resources to a callback.
@@ -124,9 +433,12 @@ The `SaveToAsync` (as well as the `CopyToAsync`) are extension methods for the `
   - Supporting file URLs
   - Enhanced support for about: URLs
 - WebSockets (mostly interesting for scripting engines, e.g., JS)
-- Storage support by providing the `IStorage` interface
+- Storage support with a unified `Storage` implementation
 - Improved cookie container (`AdvancedCookieContainer`)
 - Enhanced download capabilities for resources / links
+- Web Locks support for origin-scoped request serialization
+- Clipboard support with injectable platform implementation
+- Geolocation support with injectable platform implementation
 
 ## Participating
 
@@ -146,12 +458,4 @@ This project is supported by the [.NET Foundation](https://dotnetfoundation.org)
 
 ## License
 
-The MIT License (MIT)
-
-Copyright (c) 2015 - 2023 AngleSharp
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+AngleSharp.Io is released using the MIT license. For more information see the [license file](./LICENSE).

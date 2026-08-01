@@ -1,6 +1,7 @@
 namespace AngleSharp.Io.Network
 {
     using System;
+    using System.IO;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -16,22 +17,44 @@ namespace AngleSharp.Io.Network
         /// <param name="request">The options to consider.</param>
         /// <param name="cancel">The token for cancelling the task.</param>
         /// <returns>The task that will eventually give the response data.</returns>
-        protected override async Task<IResponse> PerformRequestAsync(Request request, CancellationToken cancel)
+        protected override Task<IResponse> PerformRequestAsync(Request request, CancellationToken cancel)
         {
-            if (FileWebRequest.Create(request.Address.Href) is FileWebRequest requester)
-            {
-                var response = await requester.GetResponseAsync().ConfigureAwait(false);
-                var content = response.GetResponseStream();
+            cancel.ThrowIfCancellationRequested();
 
-                return new DefaultResponse
+            try
+            {
+                var uri = new Uri(request.Address.Href, UriKind.Absolute);
+
+                if (uri.IsFile)
+                {
+                    var content = File.OpenRead(uri.LocalPath);
+
+                    return Task.FromResult<IResponse>(new DefaultResponse
+                    {
+                        Address = request.Address,
+                        Content = content,
+                        StatusCode = HttpStatusCode.OK
+                    });
+                }
+
+                return Task.FromResult<IResponse>(default);
+            }
+            catch (FileNotFoundException)
+            {
+                return Task.FromResult<IResponse>(new DefaultResponse
                 {
                     Address = request.Address,
-                    Content = content,
-                    StatusCode = HttpStatusCode.OK
-                };
+                    StatusCode = HttpStatusCode.NotFound
+                });
             }
-
-            return default;
+            catch (DirectoryNotFoundException)
+            {
+                return Task.FromResult<IResponse>(new DefaultResponse
+                {
+                    Address = request.Address,
+                    StatusCode = HttpStatusCode.NotFound
+                });
+            }
         }
 
         /// <summary>

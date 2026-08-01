@@ -21,8 +21,8 @@
                 var haserror = false;
                 var messages = new List<String>();
                 var closed = new TaskCompletionSource<Boolean>();
-                var document = await BrowsingContext.New().OpenNewAsync("https://echo.websocket.events/.ws");
-                var ws = new WebSocket(document.DefaultView, "wss://echo.websocket.events/");
+                var document = await BrowsingContext.New().OpenNewAsync("https://echo.websocket.org/");
+                var ws = new WebSocket(document.DefaultView, "wss://echo.websocket.org/");
 
                 // ACT
                 ws.Opened += (s, ev) => ws.Send(message);
@@ -50,7 +50,7 @@
                 // ASSERT
                 haserror.Should().BeFalse();
                 messages.Count.Should().Be(2);
-                messages[0].Should().Be("echo.websocket.events sponsored by Lob.com");
+                messages[0].Should().StartWith("Request served by ");
                 messages[1].Should().Be(message);
             }
         }

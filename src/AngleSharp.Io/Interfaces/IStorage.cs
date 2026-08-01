@@ -9,7 +9,7 @@
     /// </summary>
     [DomName("Storage")]
     [DomExposed("Window")]
-    public interface IStorage 
+    public interface IStorage
     {
         /// <summary>
         /// Gets the number of stored keys.

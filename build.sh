@@ -9,16 +9,14 @@ SCRIPT_DIR=$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)
 # CONFIGURATION
 ###########################################################################
 
-BUILD_PROJECT_FILE="$SCRIPT_DIR/nuke/_build.csproj"
-TEMP_DIRECTORY="$SCRIPT_DIR//.nuke/temp"
+TEMP_DIRECTORY="$SCRIPT_DIR/.fallout/temp"
 
-DOTNET_GLOBAL_FILE="$SCRIPT_DIR//global.json"
+DOTNET_GLOBAL_FILE="$SCRIPT_DIR/global.json"
 DOTNET_INSTALL_URL="https://dot.net/v1/dotnet-install.sh"
-DOTNET_CHANNEL="Current"
+DOTNET_CHANNEL="STS"
 
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
-export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
-export DOTNET_MULTILEVEL_LOOKUP=0
+export DOTNET_NOLOGO=1
 
 ###########################################################################
 # EXECUTION
@@ -28,7 +26,7 @@ function FirstJsonValue {
     perl -nle 'print $1 if m{"'"$1"'": "([^"]+)",?}' <<< "${@:2}"
 }
 
-# If dotnet CLI is installed globally and it matches requested version, use for execution
+# If dotnet CLI is installed globally, use it; otherwise provision a local copy under .fallout/temp.
 if [ -x "$(command -v dotnet)" ] && dotnet --version &>/dev/null; then
     export DOTNET_EXE="$(command -v dotnet)"
 else
@@ -54,9 +52,10 @@ else
         "$DOTNET_INSTALL_FILE" --install-dir "$DOTNET_DIRECTORY" --version "$DOTNET_VERSION" --no-path
     fi
     export DOTNET_EXE="$DOTNET_DIRECTORY/dotnet"
+    export PATH="$DOTNET_DIRECTORY:$PATH"
 fi
 
 echo "Microsoft (R) .NET SDK version $("$DOTNET_EXE" --version)"
 
-"$DOTNET_EXE" build "$BUILD_PROJECT_FILE" /nodeReuse:false /p:UseSharedCompilation=false -nologo -clp:NoSummary --verbosity quiet
-"$DOTNET_EXE" run --project "$BUILD_PROJECT_FILE" --no-build -- "$@"
+"$DOTNET_EXE" tool restore
+exec "$DOTNET_EXE" fallout "$@"

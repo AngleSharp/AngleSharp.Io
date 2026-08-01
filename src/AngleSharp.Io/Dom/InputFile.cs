@@ -95,9 +95,24 @@ namespace AngleSharp.Io.Dom
         {
             var ms = new MemoryStream();
             _content.Position = start;
-            var buffer = new Byte[Math.Max(0, Math.Min(end, _content.Length) - start)];
-            _content.Read(buffer, 0, buffer.Length);
-            ms.Write(buffer, 0, buffer.Length);
+            var length = Math.Max(0, (Int32)Math.Min((Int64)end, _content.Length) - start);
+            var buffer = new Byte[length];
+            var read = 0;
+
+            while (read < length)
+            {
+                var count = _content.Read(buffer, read, length - read);
+
+                if (count == 0)
+                {
+                    break;
+                }
+
+                read += count;
+            }
+
+            ms.Write(buffer, 0, read);
+            ms.Position = 0;
             _content.Position = 0;
             return new InputFile(_fileName, _type, ms);
         }

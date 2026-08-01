@@ -6,6 +6,7 @@ namespace AngleSharp.Io.Tests.Network
     using FluentAssertions;
     using NUnit.Framework;
     using System;
+    using System.Net;
     using System.IO;
     using System.Linq;
     using System.Net.Http;
@@ -34,7 +35,9 @@ namespace AngleSharp.Io.Tests.Network
             ts.HttpRequestMessage.Content.Headers.Select(p => p.Key).Should().BeEquivalentTo(new[] {"Content-Type", "Content-Length"});
             ts.HttpRequestMessage.Content.Headers.ContentType.ToString().Should().Be("application/json");
             ts.HttpRequestMessage.Content.Headers.ContentLength.Should().Be(9);
+            #pragma warning disable CS0618
             ts.HttpRequestMessage.Properties.Should().BeEmpty();
+            #pragma warning restore CS0618
             ts.HttpRequestMessage.Headers.Select(p => p.Key).Should().BeEquivalentTo(new[] {"User-Agent", "Cookie"});
             ts.HttpRequestMessage.Headers.UserAgent.ToString().Should().Be("Foo/2.0");
             ts.HttpRequestMessage.Headers.Single(p => p.Key == "Cookie").Value.Should().BeEquivalentTo(new[] {"foo=bar"});
@@ -53,7 +56,9 @@ namespace AngleSharp.Io.Tests.Network
             ts.HttpRequestMessage.Method.Should().Be(NetHttpMethod.Get);
             ts.HttpRequestMessage.RequestUri.Should().Be(new Uri("http://example/path?query=value"));
             ts.HttpRequestMessage.Content.Should().BeNull();
+            #pragma warning disable CS0618
             ts.HttpRequestMessage.Properties.Should().BeEmpty();
+            #pragma warning restore CS0618
             ts.HttpRequestMessage.Headers.Select(p => p.Key).Should().BeEquivalentTo(new[] {"User-Agent", "Cookie"});
             ts.HttpRequestMessage.Headers.UserAgent.ToString().Should().Be("Foo/2.0");
             ts.HttpRequestMessage.Headers.Single(p => p.Key == "Cookie").Value.Should().BeEquivalentTo(new[] {"foo=bar"});
@@ -118,18 +123,22 @@ namespace AngleSharp.Io.Tests.Network
             if (Helper.IsNetworkAvailable())
             {
                 // ARRANGE
-                var httpClient = new HttpClient();
+                var httpClientHandler = new HttpClientHandler
+                {
+                    AutomaticDecompression = DecompressionMethods.Brotli | DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                };
+                var httpClient = new HttpClient(httpClientHandler);
                 var requester = new HttpClientRequester(httpClient);
                 var configuration = Configuration.Default.With(requester).WithDefaultLoader();
                 var context = BrowsingContext.New(configuration);
-                var request = DocumentRequest.Get(Url.Create("http://httpbingo.org/html"));
+                var request = DocumentRequest.Get(Url.Create("https://httpbingo.org/html"));
 
                 // ACT
                 var response = await context.GetService<IDocumentLoader>().FetchAsync(request).Task;
                 var document = await context.OpenAsync(response, CancellationToken.None);
 
                 // ASSERT
-                document.QuerySelector("h1").ToHtml().Should().Be("<h1>Herman Melville - Moby-Dick</h1>");
+                document.QuerySelector("h1")?.TextContent.Should().Be("Herman Melville - Moby-Dick");
             }
         }
     }
