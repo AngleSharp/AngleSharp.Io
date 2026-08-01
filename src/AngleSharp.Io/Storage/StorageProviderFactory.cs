@@ -23,6 +23,31 @@ namespace AngleSharp.Io.Storage
         private Boolean _hasSessionStorage;
 
         /// <summary>
+        /// Creates a new storage provider factory with temporary local storage and session storage enabled.
+        /// </summary>
+        /// <returns>The new storage provider factory.</returns>
+        public static IStorageProviderFactory CreateTemporary()
+        {
+            var factory = new StorageProviderFactory();
+            factory.EnableTemporaryLocalStorage();
+            factory.EnableSessionStorage();
+            return factory;
+        }
+
+        /// <summary>
+        /// Creates a new storage provider factory with persistent local storage and session storage enabled.
+        /// </summary>
+        /// <param name="syncPath">The path used for local storage synchronization.</param>
+        /// <returns>The new storage provider factory.</returns>
+        public static IStorageProviderFactory CreatePersistent(String syncPath)
+        {
+            var factory = new StorageProviderFactory();
+            factory.EnableLocalStorage(syncPath);
+            factory.EnableSessionStorage();
+            return factory;
+        }
+
+        /// <summary>
         /// Creates a new storage provider factory.
         /// </summary>
         public StorageProviderFactory()

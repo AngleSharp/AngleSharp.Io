@@ -18,6 +18,16 @@ namespace AngleSharp.Io.Cache
         private readonly Dictionary<String, CacheBucket> _bucketsByOriginAndName;
 
         /// <summary>
+        /// Creates a new Cache Storage provider factory with temporary local storage and session storage enabled.
+        /// </summary>
+        /// <returns>The new Cache Storage provider factory.</returns>
+        public static ICacheProviderFactory CreateTemporary()
+        {
+            var factory = new CacheProviderFactory();
+            return factory;
+        }
+
+        /// <summary>
         /// Creates a new Cache Storage provider factory.
         /// </summary>
         public CacheProviderFactory()

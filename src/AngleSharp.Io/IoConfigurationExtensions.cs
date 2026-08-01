@@ -20,6 +20,34 @@ using AngleSharp.Browser.Dom;
 /// </summary>
 public static class IoConfigurationExtensions
 {
+    #region Combined
+
+    /// <summary>
+    /// Registers the IO services all in one go.
+    /// </summary>
+    /// <param name="configuration">The configuration to extend.</param>
+    /// <param name="options">The options to use.</param>
+    /// <returns>The new configuration.</returns>
+    public static IConfiguration WithIo(this IConfiguration configuration, IoOptions options)
+    {
+        if (options == null)
+        {
+            options = new IoOptions();
+        }
+
+        return configuration
+            .WithNavigator(options.Navigator)
+            .WithCookies(options.CookieHandler)
+            .WithRequesters(options.HttpHandler)
+            .WithStorageProviderFactory(options.StorageFactory)
+            .WithIndexedDbProviderFactory(options.IndexedDbFactory)
+            .WithCacheProviderFactory(options.CacheFactory)
+            .WithClipboard(options.ClipboardPlatform)
+            .WithGeolocation(options.GeolocationPlatform);
+    }
+
+    #endregion
+
     #region Navigator
 
     /// <summary>
@@ -235,7 +263,7 @@ public static class IoConfigurationExtensions
     /// <param name="factory">The storage provider factory to use.</param>
     /// <returns>The new instance with the service.</returns>
     public static IConfiguration WithStorageProviderFactory(this IConfiguration configuration, IStorageProviderFactory factory) =>
-        configuration.WithOnly<IStorageProviderFactory>(_ => factory);
+        configuration.WithOnly<IStorageProviderFactory>(factory);
 
     #endregion
 
@@ -248,7 +276,7 @@ public static class IoConfigurationExtensions
     /// <param name="factory">The IndexedDB provider factory to use.</param>
     /// <returns>The new instance with the service.</returns>
     public static IConfiguration WithIndexedDbProviderFactory(this IConfiguration configuration, IIndexedDbProviderFactory factory) =>
-        configuration.WithOnly<IIndexedDbProviderFactory>(_ => factory);
+        configuration.WithOnly<IIndexedDbProviderFactory>(factory);
 
     #endregion
 
@@ -261,7 +289,7 @@ public static class IoConfigurationExtensions
     /// <param name="factory">The Cache Storage provider factory to use.</param>
     /// <returns>The new instance with the service.</returns>
     public static IConfiguration WithCacheProviderFactory(this IConfiguration configuration, ICacheProviderFactory factory) =>
-        configuration.WithOnly<ICacheProviderFactory>(_ => factory);
+        configuration.WithOnly<ICacheProviderFactory>(factory);
 
     #endregion
 
@@ -275,8 +303,13 @@ public static class IoConfigurationExtensions
     /// <returns>The new instance with the service.</returns>
     public static IConfiguration WithClipboard(this IConfiguration configuration, IClipboardPlatform platform)
     {
-        var factory = new ClipboardProviderFactory(platform);
-        return configuration.WithClipboardProviderFactory(factory);
+        if (platform is not null)
+        {
+            var factory = new ClipboardProviderFactory(platform);
+            return configuration.WithClipboardProviderFactory(factory);
+        }
+
+        return configuration;
     }
 
     /// <summary>
@@ -286,7 +319,7 @@ public static class IoConfigurationExtensions
     /// <param name="factory">The clipboard provider factory to use.</param>
     /// <returns>The new instance with the service.</returns>
     public static IConfiguration WithClipboardProviderFactory(this IConfiguration configuration, IClipboardProviderFactory factory) =>
-        configuration.WithOnly<IClipboardProviderFactory>(_ => factory);
+        configuration.WithOnly<IClipboardProviderFactory>(factory);
 
     #endregion
 
@@ -300,8 +333,13 @@ public static class IoConfigurationExtensions
     /// <returns>The new instance with the service.</returns>
     public static IConfiguration WithGeolocation(this IConfiguration configuration, IGeolocationPlatform platform)
     {
-        var factory = new GeolocationProviderFactory(platform);
-        return configuration.WithGeolocationProviderFactory(factory);
+        if (platform is not null)
+        {
+            var factory = new GeolocationProviderFactory(platform);
+            return configuration.WithGeolocationProviderFactory(factory);
+        }
+
+        return configuration;
     }
 
     /// <summary>
@@ -311,7 +349,7 @@ public static class IoConfigurationExtensions
     /// <param name="factory">The geolocation provider factory to use.</param>
     /// <returns>The new instance with the service.</returns>
     public static IConfiguration WithGeolocationProviderFactory(this IConfiguration configuration, IGeolocationProviderFactory factory) =>
-        configuration.WithOnly<IGeolocationProviderFactory>(_ => factory);
+        configuration.WithOnly<IGeolocationProviderFactory>(factory);
 
     #endregion
 }

@@ -30,6 +30,26 @@ You can also use the graphical library package manager ("Manage NuGet Packages f
 
 To use AngleSharp.Io you need to add it to your `Configuration` coming from AngleSharp itself.
 
+### All-In-One Setup
+
+If you want to register all core AngleSharp.Io services in one step, use `WithIo` with `IoOptions`:
+
+```cs
+var options = new IoOptions
+{
+    // optional; defaults are already provided
+    ClipboardPlatform = myClipboardPlatform,
+    GeolocationPlatform = myGeolocationPlatform,
+};
+
+var config = Configuration.Default
+    .WithIo(options)
+    .WithDefaultLoader();
+```
+
+`WithIo` wires navigator, cookies, requesters, storage, IndexedDB, and cache in one call.
+Clipboard and geolocation are only enabled when platforms are provided.
+
 ### Requesters
 
 If you just want to use *all* available requesters provided by AngleSharp.Io you can do the following:

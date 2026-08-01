@@ -16,6 +16,16 @@ namespace AngleSharp.Io.IndexedDb
         private readonly Dictionary<String, IndexedDbDatabaseBucket> _databasesByOriginAndName;
 
         /// <summary>
+        /// Creates a new IndexedDB provider factory with temporary local storage and session storage enabled.
+        /// </summary>
+        /// <returns>The new IndexedDB provider factory.</returns>
+        public static IIndexedDbProviderFactory CreateTemporary()
+        {
+            var factory = new IndexedDbProviderFactory();
+            return factory;
+        }
+
+        /// <summary>
         /// Creates a new IndexedDB provider factory.
         /// </summary>
         public IndexedDbProviderFactory()

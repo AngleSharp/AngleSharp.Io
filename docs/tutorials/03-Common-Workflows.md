@@ -6,7 +6,28 @@ section: "AngleSharp.Io"
 
 This tutorial collects practical, copy-paste-friendly workflows for common AngleSharp.Io scenarios.
 
-## 1. Use custom HttpClient behavior with requesters
+## 1. Register all core Io services in one call
+
+Use this when you want a compact setup with sensible defaults and optional platform integrations.
+
+```cs
+var options = new IoOptions
+{
+    ClipboardPlatform = myClipboardPlatform,   // optional
+    GeolocationPlatform = myGeolocationPlatform, // optional
+};
+
+var config = Configuration.Default
+    .WithIo(options)
+    .WithDefaultLoader();
+```
+
+Why this helps:
+
+- You configure navigator, cookies, requesters, storage, IndexedDB, and cache together.
+- You can still override any dependency through `IoOptions`.
+
+## 2. Use custom HttpClient behavior with requesters
 
 Use this when you need proxying, custom decompression, headers, or controlled redirect behavior.
 
@@ -34,7 +55,7 @@ Why this helps:
 - You keep a single place for transport behavior.
 - You still use AngleSharp's standard loading pipeline.
 
-## 2. Persist cookies across runs
+## 3. Persist cookies across runs
 
 Use this for crawl sessions or login flows that should survive process restarts.
 
@@ -54,7 +75,7 @@ await context.OpenAsync("https://httpbingo.org/cookies/set?k1=v1");
 
 If you only need in-memory cookies for a single run, use `WithTemporaryCookies()`.
 
-## 3. Simulate file upload input in tests
+## 4. Simulate file upload input in tests
 
 Use this when you need to test form/file handling without manual browser interaction.
 
@@ -74,7 +95,7 @@ Alternative:
 
 - `AppendFile("/absolute/path/to/avatar.png")` to attach directly from disk.
 
-## 4. Download linked resources directly
+## 5. Download linked resources directly
 
 Use this if you want resource stream access from an anchor/link-like element.
 
@@ -94,7 +115,7 @@ await response.Content.CopyToAsync(target);
 
 You can also combine this with `WithStandardDownload(...)` if you want callback-based download routing.
 
-## 5. Open a WebSocket from a DOM context
+## 6. Open a WebSocket from a DOM context
 
 Use this for integration tests or headless workflows that need live message channels.
 
