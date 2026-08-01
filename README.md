@@ -129,9 +129,22 @@ sessionStorage["ephemeral"] = "42";
 
 ### IndexedDB
 
-AngleSharp.Io also provides a lightweight IndexedDB surface that is shared per origin:
+AngleSharp.Io provides an in-memory IndexedDB surface that is shared per origin:
 
 - `indexedDB` using in-memory databases and object stores scoped to the origin
+- versioned open with upgrade callback support
+- explicit transactions (`ReadOnly` / `ReadWrite`) with commit and abort
+- request-style open wrappers (`OpenRequest(...)`)
+- object store record methods (`Add`, `Put`, `Get`, `Delete`, `Count`)
+- key-range queries (`IndexedDbKeyRange`)
+- indexes with optional uniqueness (`CreateIndex`, `GetIndex`, `DeleteIndex`)
+- cursors for store and index iteration (`OpenCursor`)
+- request state (`Pending` / `Success` / `Error` / `Blocked`) and close lifecycle
+- version-change notifications on open connections
+- optional auto-unblock open requests (`OpenRequest(..., waitForUnblock: true)`)
+- request-based delete with optional auto-unblock (`DeleteDatabaseRequest(..., waitForUnblock: true)`)
+- transaction lifecycle state/events (`IsCompleted`, `IsAborted`, `Completed`, `Aborted`)
+- single active read-write transaction per database
 
 To configure IndexedDB, create and register an `IIndexedDbProviderFactory`:
 
@@ -145,10 +158,60 @@ Once configured, IndexedDB services can be resolved from the browsing context:
 ```cs
 var context = BrowsingContext.New(config);
 var document = await context.OpenAsync("https://example.org");
-var database = document.DefaultView.IndexedDb().Open("app");
-var store = database.CreateObjectStore("records");
+var database = document.DefaultView.IndexedDb().Open("app", 1, tx =>
+{
+    tx.CreateObjectStore("records");
+});
 
-store["token"] = "abc";
+using (var transaction = database.BeginTransaction("records", IndexedDbTransactionMode.ReadWrite))
+{
+    var store = transaction.GetObjectStore("records");
+    var byType = store.CreateIndex("byType", "type");
+
+    store.Add("token", "abc");
+    store.Put("token", "updated");
+
+    var notes = byType.GetAll("note");
+    var range = store.GetAll(IndexedDbKeyRange.Bound("a", "m"));
+
+    transaction.Commit();
+}
+
+var openRequest = document.DefaultView.IndexedDb().OpenRequest("app", 2, tx =>
+{
+    tx.CreateObjectStore("events");
+});
+
+var upgraded = await openRequest.WaitAsync();
+
+var cursor = byType.OpenCursor(IndexedDbKeyRange.Bound("note", "task"));
+
+while (cursor != null)
+{
+    Console.WriteLine(cursor.Value);
+    cursor = cursor.Continue();
+}
+
+database.Close();
+
+var waitingRequest = document.DefaultView.IndexedDb().OpenRequest(
+    "app",
+    3,
+    tx => tx.CreateObjectStore("logs"),
+    waitForUnblock: true);
+
+var upgradedAgain = await waitingRequest.WaitAsync();
+
+var deleteRequest = document.DefaultView.IndexedDb().DeleteDatabaseRequest("app", waitForUnblock: true);
+var deleted = await deleteRequest.WaitAsync();
+
+using (var writeTx = upgradedAgain.BeginTransaction("records", IndexedDbTransactionMode.ReadWrite))
+{
+    writeTx.Completed += () => Console.WriteLine("transaction committed");
+    writeTx.Aborted += () => Console.WriteLine("transaction aborted");
+    writeTx.GetObjectStore("records").Put("k", "v");
+    writeTx.Commit();
+}
 ```
 
 ### Cache Storage
