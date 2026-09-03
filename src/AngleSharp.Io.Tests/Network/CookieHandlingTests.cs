@@ -16,7 +16,7 @@ namespace AngleSharp.Io.Tests.Network
         {
             if (Helper.IsNetworkAvailable())
             {
-                var url = "https://httpbingo.org/cookies/set?k1=v1";
+                var url = "https://anglesharp-tests.anglevisions.com/test-cases/set-cookies?k1=v1";
                 var config = Configuration.Default.WithCookies().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 var document = await context.OpenAsync(url);
@@ -30,7 +30,7 @@ namespace AngleSharp.Io.Tests.Network
         {
             if (Helper.IsNetworkAvailable())
             {
-                var url = "https://httpbingo.org/cookies/set?k2=v2&k1=v1";
+                var url = "https://anglesharp-tests.anglevisions.com/test-cases/set-cookies?k2=v2&k1=v1";
                 var config = Configuration.Default.WithCookies().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 var document = await context.OpenAsync(url);
@@ -44,7 +44,7 @@ namespace AngleSharp.Io.Tests.Network
         {
             if (Helper.IsNetworkAvailable())
             {
-                var url = "https://httpbingo.org/cookies/set?test=baz&k2=v2&k1=v1&foo=bar";
+                var url = "https://anglesharp-tests.anglevisions.com/test-cases/set-cookies?test=baz&k2=v2&k1=v1&foo=bar";
                 var config = Configuration.Default.WithCookies().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 var document = await context.OpenAsync(url);
@@ -58,12 +58,12 @@ namespace AngleSharp.Io.Tests.Network
         {
             if (Helper.IsNetworkAvailable())
             {
-                var baseUrl = "https://httpbingo.org/cookies";
-                var url = baseUrl + "/set?test=baz&k2=v2&k1=v1&foo=bar";
+                var baseUrl = "https://anglesharp-tests.anglevisions.com/test-cases";
+                var url = baseUrl + "/set-cookies?test=baz&k2=v2&k1=v1&foo=bar";
                 var config = Configuration.Default.WithCookies().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 await context.OpenAsync(url);
-                var document = await context.OpenAsync(baseUrl);
+                var document = await context.OpenAsync(baseUrl + "/get-cookies");
 
                 AssertCookies(document.Body.TextContent,
                     new KeyValuePair<String, String>("foo", "bar"),
@@ -78,9 +78,9 @@ namespace AngleSharp.Io.Tests.Network
         {
             if (Helper.IsNetworkAvailable())
             {
-                var cookieUrl = "https://httpbingo.org/cookies/set?test=baz";
-                var redirectUrl = "https://httpbingo.org/redirect-to?url=https%3A%2F%2Fhttpbingo.org%2Fcookies";
-                                var config = Configuration.Default.WithCookies().WithDefaultLoader();
+                var cookieUrl = "https://anglesharp-tests.anglevisions.com/test-cases/set-cookies?test=baz";
+                var redirectUrl = "https://anglesharp-tests.anglevisions.com/test-cases/redirect?url=https%3A%2F%2Fanglesharp-tests.anglevisions.com%2Ftest-cases%2Fget-cookies";
+                var config = Configuration.Default.WithCookies().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 await context.OpenAsync(cookieUrl);
                 var document = await context.OpenAsync(redirectUrl);
@@ -95,14 +95,15 @@ namespace AngleSharp.Io.Tests.Network
         {
             if (Helper.IsNetworkAvailable())
             {
-                var cookieUrl = "https://httpbingo.org/cookies/set?test=baz";
-                var redirectUrl = "http://httpbingo.org/redirect-to?url=http%3A%2F%2Fhttpbingo.org%2Fcookies";
+                var cookieUrl = "https://anglesharp-tests.anglevisions.com/test-cases/set-cookies?test=baz";
+                var redirectUrl = "http://anglesharp-tests.anglevisions.com/test-cases/redirect?url=http%3A%2F%2Fanglesharp-tests.anglevisions.com%2Ftest-cases%2Fget-cookies";
                 var config = Configuration.Default.WithCookies().WithDefaultLoader();
                 var context = BrowsingContext.New(config);
                 await context.OpenAsync(cookieUrl);
                 var document = await context.OpenAsync(redirectUrl);
 
-                AssertCookies(document.Body.TextContent);
+                AssertCookies(document.Body.TextContent,
+                    new KeyValuePair<String, String>("test", "baz"));
             }
         }
 

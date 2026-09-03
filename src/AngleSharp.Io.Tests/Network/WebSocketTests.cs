@@ -21,8 +21,8 @@
                 var haserror = false;
                 var messages = new List<String>();
                 var closed = new TaskCompletionSource<Boolean>();
-                var document = await BrowsingContext.New().OpenNewAsync("https://echo.websocket.org/");
-                var ws = new WebSocket(document.DefaultView, "wss://echo.websocket.org/");
+                var document = await BrowsingContext.New().OpenNewAsync("https://anglesharp-tests.anglevisions.com/");
+                var ws = new WebSocket(document.DefaultView, "wss://anglesharp-tests.anglevisions.com/ws-echo");
 
                 // ACT
                 ws.Opened += (s, ev) => ws.Send(message);
@@ -30,11 +30,7 @@
                 {
                     var msg = ev as MessageEvent;
                     messages.Add(msg.Data.ToString());
-
-                    if (messages.Count == 2)
-                    {
-                        ws.Close();
-                    }
+                    ws.Close();
                 };
                 ws.Closed += (s, ev) =>
                 {
@@ -49,9 +45,8 @@
 
                 // ASSERT
                 haserror.Should().BeFalse();
-                messages.Count.Should().Be(2);
-                messages[0].Should().StartWith("Request served by ");
-                messages[1].Should().Be(message);
+                messages.Count.Should().Be(1);
+                messages[0].Should().Be(message);
             }
         }
     }

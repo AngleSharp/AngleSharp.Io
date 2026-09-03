@@ -131,7 +131,7 @@ namespace AngleSharp.Io.Tests.Network
                 var requester = new HttpClientRequester(httpClient);
                 var configuration = Configuration.Default.With(requester).WithDefaultLoader();
                 var context = BrowsingContext.New(configuration);
-                var request = DocumentRequest.Get(Url.Create("https://httpbingo.org/html"));
+                var request = DocumentRequest.Get(Url.Create("https://anglesharp-tests.anglevisions.com/test-cases/html"));
 
                 // ACT
                 var response = await context.GetService<IDocumentLoader>().FetchAsync(request).Task;
