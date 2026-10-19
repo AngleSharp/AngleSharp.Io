@@ -32,6 +32,11 @@ var config = Configuration.Default
 `WithIo` wires navigator, cookies, requesters, storage, IndexedDB, and cache in one call.
 Clipboard and geolocation are only enabled when platforms are provided.
 
+To keep all browsing data in one place, start from `IoOptions.CreateTemporary()` (memory only) or
+`IoOptions.CreatePersistent(rootDirectory)`, which stores the cookies (`cookies.txt`), the local
+storage (`storage`), and the HTTP cache (`http-cache`) below the given directory. Both enable the
+HTTP cache; a plain `new IoOptions()` leaves it off.
+
 ### Requesters
 
 If you just want to use *all* available requesters provided by AngleSharp.Io you can do the following:
@@ -74,6 +79,26 @@ var config = Configuration.Default
     .With(new HttpClientRequester(myHttpClient)) // re-using the HttpClient instance
     .WithDefaultLoader();
 ```
+
+### HTTP Cache
+
+The HTTP(S) requesters can be wrapped with a private HTTP cache following RFC 9111. Only GET
+responses are stored (HEAD is answered from them), unsafe methods such as POST invalidate the
+stored responses, and `Cache-Control`, `Expires`, `Vary`, `ETag`, and `Last-Modified` are respected.
+Stored responses never contain `Set-Cookie`, so cookies are not applied twice. Entries are kept
+per origin of the requested address.
+
+```cs
+var config = Configuration.Default
+    .WithRequesters()
+    .WithHttpCache() // in memory; must come after the requesters
+    .WithDefaultLoader();
+```
+
+To persist the cache, pass a directory: `.WithHttpCache(cacheDirectory)`. More options are
+available via `HttpCacheOptions`, e.g., `Mode = HttpCacheMode.OnlyIfCached` to replay previously
+cached pages without network access. The cache is registered as `IHttpCache`, which can be used
+to inspect or clear the stored responses.
 
 ### Cookies
 
@@ -433,6 +458,7 @@ The `SaveToAsync` (as well as the `CopyToAsync`) are extension methods for the `
 - WebSockets (mostly interesting for scripting engines, e.g., JS)
 - Storage support with a unified `Storage` implementation
 - Improved cookie container (`AdvancedCookieContainer`)
+- Private HTTP cache for the requesters (memory or persisted)
 - Enhanced download capabilities for resources / links
 - Web Locks support for origin-scoped request serialization
 - Clipboard support with injectable platform implementation

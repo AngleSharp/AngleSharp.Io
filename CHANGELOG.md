@@ -1,3 +1,10 @@
+# 1.2.0
+
+Released on tbd.
+
+- Added an HTTP cache for the requesters (`WithHttpCache`)
+- Added `IoOptions.CreateTemporary` and `IoOptions.CreatePersistent`
+
 # 1.1.0
 
 Released on Friday, July 31 2026.

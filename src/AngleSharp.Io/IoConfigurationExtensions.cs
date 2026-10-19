@@ -6,6 +6,7 @@ using AngleSharp.Io.Cookie;
 using AngleSharp.Io.Dom;
 using AngleSharp.Io.IndexedDb;
 using AngleSharp.Io.GeolocationApi;
+using AngleSharp.Io.Http;
 using AngleSharp.Io.Network;
 using AngleSharp.Io.Storage;
 using AngleSharp.Io.ClipboardApi;
@@ -39,6 +40,7 @@ public static class IoConfigurationExtensions
             .WithNavigator(options.Navigator)
             .WithCookies(options.CookieHandler)
             .WithRequesters(options.HttpHandler)
+            .WithHttpCache(options.HttpCache)
             .WithStorageProviderFactory(options.StorageFactory)
             .WithIndexedDbProviderFactory(options.IndexedDbFactory)
             .WithCacheProviderFactory(options.CacheFactory)
@@ -187,6 +189,85 @@ public static class IoConfigurationExtensions
     /// <returns>The new configuration.</returns>
     public static IConfiguration WithRequester<T>(this IConfiguration configuration)
         where T: IRequester, new() => configuration.WithRequester(new T());
+
+    #endregion
+
+    #region HTTP Cache
+
+    /// <summary>
+    /// Wraps the registered HTTP(S) requesters with an HTTP cache keeping
+    /// its entries in memory. Needs to be called after the requesters have
+    /// been registered.
+    /// </summary>
+    /// <param name="configuration">The configuration to extend.</param>
+    /// <returns>The new configuration.</returns>
+    public static IConfiguration WithHttpCache(this IConfiguration configuration) =>
+        configuration.WithHttpCache(new HttpCacheOptions());
+
+    /// <summary>
+    /// Wraps the registered HTTP(S) requesters with an HTTP cache persisting
+    /// its entries in the given directory. Needs to be called after the
+    /// requesters have been registered.
+    /// </summary>
+    /// <param name="configuration">The configuration to extend.</param>
+    /// <param name="directoryPath">The directory for storing the entries.</param>
+    /// <returns>The new configuration.</returns>
+    public static IConfiguration WithHttpCache(this IConfiguration configuration, String directoryPath) =>
+        configuration.WithHttpCache(new PersistenceHttpCacheHandler(directoryPath));
+
+    /// <summary>
+    /// Wraps the registered HTTP(S) requesters with an HTTP cache using the
+    /// given handler. Needs to be called after the requesters have been
+    /// registered.
+    /// </summary>
+    /// <param name="configuration">The configuration to extend.</param>
+    /// <param name="handler">The handler for storing the entries.</param>
+    /// <returns>The new configuration.</returns>
+    public static IConfiguration WithHttpCache(this IConfiguration configuration, IHttpCacheHandler handler) =>
+        configuration.WithHttpCache(new HttpCacheOptions { Handler = handler });
+
+    /// <summary>
+    /// Wraps the registered HTTP(S) requesters with an HTTP cache using the
+    /// given options. Needs to be called after the requesters have been
+    /// registered. Passing null leaves the configuration unchanged.
+    /// </summary>
+    /// <param name="configuration">The configuration to extend.</param>
+    /// <param name="options">The options of the cache.</param>
+    /// <returns>The new configuration.</returns>
+    public static IConfiguration WithHttpCache(this IConfiguration configuration, HttpCacheOptions options)
+    {
+        if (options is null)
+        {
+            return configuration;
+        }
+
+        return configuration.WithHttpCache(new HttpCache(options));
+    }
+
+    /// <summary>
+    /// Wraps the registered HTTP(S) requesters with the given HTTP cache,
+    /// which is also registered as a service. Needs to be called after the
+    /// requesters have been registered.
+    /// </summary>
+    /// <param name="configuration">The configuration to extend.</param>
+    /// <param name="cache">The cache to use.</param>
+    /// <returns>The new configuration.</returns>
+    public static IConfiguration WithHttpCache(this IConfiguration configuration, IHttpCache cache)
+    {
+        // rebuilding the list keeps the order of the requesters, which
+        // decides which requester handles a protocol
+        var services = configuration.Services.Select(service => service switch
+        {
+            CachingRequester caching => new CachingRequester(caching.Inner, cache),
+            IRequester requester when IsHttpRequester(requester) => new CachingRequester(requester, cache),
+            _ => service,
+        });
+
+        return new Configuration(services).WithOnly<IHttpCache>(cache);
+    }
+
+    private static Boolean IsHttpRequester(IRequester requester) =>
+        requester.SupportsProtocol(ProtocolNames.Http) || requester.SupportsProtocol(ProtocolNames.Https);
 
     #endregion
 
