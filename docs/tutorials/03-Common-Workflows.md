@@ -27,6 +27,10 @@ Why this helps:
 - You configure navigator, cookies, requesters, storage, IndexedDB, and cache together.
 - You can still override any dependency through `IoOptions`.
 
+To keep a whole browsing profile (cookies, local storage, HTTP cache) on disk, start from
+`IoOptions.CreatePersistent(rootDirectory)` instead; `IoOptions.CreateTemporary()` does the same in
+memory.
+
 ## 2. Use custom HttpClient behavior with requesters
 
 Use this when you need proxying, custom decompression, headers, or controlled redirect behavior.
@@ -135,3 +139,43 @@ await closed.Task;
 ```
 
 Tip: for tests that depend on external endpoints, use explicit timeouts to avoid indefinite waits.
+
+## 7. Cache responses and replay them offline
+
+Use this for crawlers that revisit pages, or for tests that should run against previously recorded
+responses instead of the live site.
+
+```cs
+var cacheDirectory = Path.Combine(Path.GetTempPath(), "anglesharp.http-cache");
+
+// first run: fill the cache while browsing as usual
+var recording = Configuration.Default
+    .WithRequesters()
+    .WithHttpCache(new HttpCacheOptions
+    {
+        Handler = new PersistenceHttpCacheHandler(cacheDirectory),
+        Mode = HttpCacheMode.ForceCache, // keep using what is stored, even if stale
+    })
+    .WithDefaultLoader();
+
+await BrowsingContext.New(recording).OpenAsync("https://example.org");
+
+// later runs: never touch the network
+var replaying = Configuration.Default
+    .WithRequesters()
+    .WithHttpCache(new HttpCacheOptions
+    {
+        Handler = new PersistenceHttpCacheHandler(cacheDirectory),
+        Mode = HttpCacheMode.OnlyIfCached, // 504 for anything not recorded
+    })
+    .WithDefaultLoader();
+
+var document = await BrowsingContext.New(replaying).OpenAsync("https://example.org");
+```
+
+Notes:
+
+- Only responses the server allows to be cached are recorded, e.g., `no-store` responses and `Vary: *`
+  are never stored.
+- With `HttpCacheMode.Default` the cache behaves like a browser and only uses fresh responses.
+

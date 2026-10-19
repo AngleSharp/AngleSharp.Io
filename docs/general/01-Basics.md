@@ -50,6 +50,25 @@ var config = Configuration.Default
 `WithIo` wires navigator, cookies, requesters, storage, IndexedDB, and cache in one call.
 Clipboard and geolocation are only enabled when platforms are provided.
 
+Instead of `new IoOptions()` you can start from one of the factory methods, which also turn on
+the [HTTP cache](#http-cache):
+
+```cs
+// everything in memory, e.g., for tests or private sessions
+var temporary = IoOptions.CreateTemporary();
+
+// cookies, local storage, and HTTP cache persisted below one directory:
+//   <root>/cookies.txt, <root>/storage, <root>/http-cache
+var persistent = IoOptions.CreatePersistent(rootDirectory);
+
+var config = Configuration.Default
+    .WithIo(persistent)
+    .WithDefaultLoader();
+```
+
+A plain `new IoOptions()` leaves the HTTP cache off. IndexedDB and Cache Storage are always kept in
+memory, also with `CreatePersistent`.
+
 ### Requesters
 
 If you just want to use *all* available requesters provided by AngleSharp.Io you can do the following:
@@ -92,6 +111,92 @@ var config = Configuration.Default
     .With(new HttpClientRequester(myHttpClient)) // re-using the HttpClient instance
     .WithDefaultLoader();
 ```
+
+### HTTP Cache
+
+The HTTP(S) requesters can be wrapped with a private HTTP cache that follows RFC 9111, just like
+the cache of a browser. Cached responses are answered without touching the network; stale ones are
+revalidated with the server.
+
+```cs
+var config = Configuration.Default
+    .WithRequesters()  // the cache wraps the requesters registered so far ...
+    .WithHttpCache()   // ... so it needs to come after them
+    .WithDefaultLoader();
+```
+
+The entries can be kept in memory (default) or persisted in a directory, which is the same choice
+as for cookies and storage:
+
+```cs
+config.WithHttpCache();                                        // memory
+config.WithHttpCache(cacheDirectory);                          // persisted files
+config.WithHttpCache(new MemoryHttpCacheHandler());            // explicit handler
+config.WithHttpCache(new HttpCacheOptions { /* see below */ }); // full control
+```
+
+What gets cached:
+
+- Only `GET` responses are stored; a `HEAD` request is answered from a stored `GET` response.
+- Unsafe methods (`POST`, `PUT`, `DELETE`, ...) are never cached. A successful one removes the stored
+  responses for its address as well as for same-origin `Location` / `Content-Location` targets.
+- `Cache-Control` (`no-store`, `no-cache`, `max-age`, `must-revalidate`, `public`, ...) and `Expires`
+  of the response decide how long a response is fresh. Without them, responses with `Last-Modified`
+  stay fresh for 10% of their age (at most 7 days).
+- Request headers are respected, too: `Cache-Control: no-store`, `no-cache`, `max-age`, `min-fresh`,
+  `max-stale`, `only-if-cached`, and `Pragma: no-cache`.
+- `Vary` keeps separate variants, e.g., per `Accept-Language`. `Vary: *` is never stored.
+- Stale responses with `ETag` or `Last-Modified` are revalidated using `If-None-Match` /
+  `If-Modified-Since`. A `304` refreshes the stored response.
+- Requests with an `Authorization` header are only stored if the response allows it (`public`,
+  `must-revalidate`, or `s-maxage`). `private` responses are stored, since the cache is private.
+- `Set-Cookie` is never stored, so cookies are only applied for responses coming from the network.
+- If the network fails, a stale response is used instead, unless it requires revalidation.
+
+The `HttpCacheOptions` give you more control:
+
+```cs
+var options = new HttpCacheOptions
+{
+    Handler = new PersistenceHttpCacheHandler(cacheDirectory),
+    Mode = HttpCacheMode.Default,
+    MaxEntrySize = 10 * 1024 * 1024,  // larger responses are passed through, but not stored
+    UseHeuristicFreshness = true,     // the Last-Modified rule from above
+    Bypass = request => request.Address.Path.StartsWith("api/"), // never cache these
+};
+
+var config = Configuration.Default
+    .WithRequesters()
+    .WithHttpCache(options)
+    .WithDefaultLoader();
+```
+
+The `Mode` uses the names of the `cache` option of `fetch`:
+
+| Mode | Uses stored responses | Goes to the network | Stores responses |
+| --- | --- | --- | --- |
+| `Default` | if fresh (stale ones are revalidated) | if needed | yes |
+| `NoStore` | no | always | no |
+| `Reload` | no | always | yes |
+| `NoCache` | after revalidation | always | yes |
+| `ForceCache` | always, even if stale | only if nothing is stored | yes |
+| `OnlyIfCached` | always, even if stale | never (`504` if nothing is stored) | no |
+
+The cache is registered as `IHttpCache`, which can be used to look into or clear the entries. The
+entries are kept per origin of the requested address:
+
+```cs
+var context = BrowsingContext.New(config);
+var cache = context.GetService<IHttpCache>();
+
+var stored = await cache.MatchAsync(new Request { Address = new Url("https://example.org/") }, CancellationToken.None);
+await cache.RemoveAsync(new Url("https://example.org/"), CancellationToken.None);
+await cache.ClearAsync("https://example.org", CancellationToken.None); // one origin
+await cache.ClearAsync(CancellationToken.None);                        // everything
+```
+
+Note that the HTTP cache is not the same as the [Cache Storage](#cache-storage) (`caches`), which is
+a DOM API that is only filled explicitly.
 
 ### Cookies
 
@@ -233,7 +338,9 @@ using (var writeTx = upgradedAgain.BeginTransaction("records", IndexedDbTransact
 
 ### Cache Storage
 
-AngleSharp.Io also exposes a lightweight Cache Storage surface that is shared per origin:
+AngleSharp.Io also exposes a lightweight Cache Storage surface that is shared per origin. This is
+the DOM API (`caches`) that scripts fill explicitly; for caching the responses of the requesters
+see [HTTP Cache](#http-cache).
 
 - `caches` using in-memory caches and response snapshots scoped to the origin
 
