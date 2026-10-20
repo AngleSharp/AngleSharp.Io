@@ -1,6 +1,7 @@
 namespace AngleSharp.Io.Dom
 {
     using AngleSharp.Attributes;
+    using AngleSharp.Io.PermissionsApi;
     using System;
     using System.Threading.Tasks;
 
@@ -11,14 +12,27 @@ namespace AngleSharp.Io.Dom
     public sealed class Geolocation
     {
         private readonly IGeolocationPlatform _platform;
+        private readonly Permissions _permissions;
 
         /// <summary>
         /// Creates a new geolocation wrapper using the provided platform implementation.
         /// </summary>
         /// <param name="platform">The platform geolocation implementation.</param>
         public Geolocation(IGeolocationPlatform platform)
+            : this(platform, null)
+        {
+        }
+
+        /// <summary>
+        /// Creates a new geolocation wrapper using the provided platform
+        /// implementation, which is only used when the permissions allow it.
+        /// </summary>
+        /// <param name="platform">The platform geolocation implementation.</param>
+        /// <param name="permissions">The permissions to check, or null to allow every access.</param>
+        public Geolocation(IGeolocationPlatform platform, Permissions permissions)
         {
             _platform = platform ?? throw new ArgumentNullException(nameof(platform));
+            _permissions = permissions;
         }
 
         /// <summary>
@@ -39,6 +53,11 @@ namespace AngleSharp.Io.Dom
         [DomName("getCurrentPosition")]
         public async Task<GeolocationPosition> GetCurrentPosition(GeolocationOptions options)
         {
+            if (_permissions != null)
+            {
+                await _permissions.EnsureGrantedAsync(PermissionNames.Geolocation).ConfigureAwait(false);
+            }
+
             var reading = await _platform.GetCurrentPositionAsync(options ?? new GeolocationOptions()).ConfigureAwait(false);
             return GeolocationPosition.FromReading(reading ?? GeolocationReading.Empty);
         }

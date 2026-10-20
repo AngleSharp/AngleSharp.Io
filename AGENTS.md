@@ -48,6 +48,10 @@ The main integration surface is `src/AngleSharp.Io/IoConfigurationExtensions.cs`
 - `WithHttpCache(...)` wraps the registered HTTP(S) requesters in `CachingRequester`
   (`src/AngleSharp.Io/Http`), so it must be called after `WithRequesters(...)`. Not to be
   confused with `Cache/` (`window.caches`, the DOM Cache Storage API).
+- `WithPermissions(...)` registers the `IPermissionPolicy` behind `navigator.permissions`. APIs
+  using a powerful feature take the navigator's `Permissions` (null = ungated) and call
+  `EnsureGrantedAsync` / `RequestAsync` instead of their own checks; add new names to
+  `PermissionNames` (`src/AngleSharp.Io/Permissions`).
 
 Cookie subsystem layout (`src/AngleSharp.Io/Cookie`):
 

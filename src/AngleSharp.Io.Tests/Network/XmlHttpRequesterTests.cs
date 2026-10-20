@@ -230,11 +230,9 @@ namespace AngleSharp.Io.Tests.Network
             formData.Append("name", "Ada Lovelace", "text/plain");
             formData.Append("role", "Mathematician", "text/plain");
 
-            var method = typeof(XmlHttpRequest).GetMethod("Serialize", BindingFlags.Static | BindingFlags.NonPublic);
-            var serialized = method.Invoke(null, new Object[] { formData });
-            var serializedType = serialized.GetType();
-            var content = (Stream)serializedType.GetProperty("Content").GetValue(serialized);
-            var contentType = (String)serializedType.GetProperty("ContentType").GetValue(serialized);
+            var serialized = RequestBody.Serialize(formData);
+            var content = serialized.Content;
+            var contentType = serialized.ContentType;
 
             String body;
 
@@ -254,11 +252,9 @@ namespace AngleSharp.Io.Tests.Network
         public void SerializeUrlSearchParamsShouldUseWwwFormUrlEncodedContentType()
         {
             var searchParams = new UrlSearchParams("a=1&b=2");
-            var method = typeof(XmlHttpRequest).GetMethod("Serialize", BindingFlags.Static | BindingFlags.NonPublic);
-            var serialized = method.Invoke(null, new Object[] { searchParams });
-            var serializedType = serialized.GetType();
-            var content = (Stream)serializedType.GetProperty("Content").GetValue(serialized);
-            var contentType = (String)serializedType.GetProperty("ContentType").GetValue(serialized);
+            var serialized = RequestBody.Serialize(searchParams);
+            var content = serialized.Content;
+            var contentType = serialized.ContentType;
 
             String body;
 
@@ -274,11 +270,9 @@ namespace AngleSharp.Io.Tests.Network
         [Test]
         public void SerializeNullShouldProduceEmptyBodyWithoutContentType()
         {
-            var method = typeof(XmlHttpRequest).GetMethod("Serialize", BindingFlags.Static | BindingFlags.NonPublic);
-            var serialized = method.Invoke(null, new Object[] { null });
-            var serializedType = serialized.GetType();
-            var content = (Stream)serializedType.GetProperty("Content").GetValue(serialized);
-            var contentType = (String)serializedType.GetProperty("ContentType").GetValue(serialized);
+            var serialized = RequestBody.Serialize(null);
+            var content = serialized.Content;
+            var contentType = serialized.ContentType;
 
             Assert.AreEqual(String.Empty, new StreamReader(content, Encoding.UTF8, true, 1024, true).ReadToEnd());
             Assert.IsNull(contentType);

@@ -15,6 +15,9 @@ var options = new IoOptions
 {
     ClipboardPlatform = myClipboardPlatform,   // optional
     GeolocationPlatform = myGeolocationPlatform, // optional
+    StorageManagerPlatform = myStorageManagerPlatform, // optional
+    ServiceWorkerPlatform = myServiceWorkerPlatform, // optional
+    WebRtcPlatform = new LoopbackRtcPlatform(), // optional
 };
 
 var config = Configuration.Default

@@ -8,7 +8,10 @@ using AngleSharp.Io.Cookie;
 using AngleSharp.Io.Dom;
 using AngleSharp.Io.Http;
 using AngleSharp.Io.IndexedDb;
+using AngleSharp.Io.PermissionsApi;
+using AngleSharp.Io.Reporting;
 using AngleSharp.Io.Storage;
+using AngleSharp.Io.WebRtc;
 
 /// <summary>
 /// Options for setting up the Io services.
@@ -57,6 +60,11 @@ public sealed class IoOptions
     public NavigatorOptions Navigator { get; set; } = new NavigatorOptions();
 
     /// <summary>
+    /// Gets or sets the options for sending beacons via navigator.sendBeacon.
+    /// </summary>
+    public BeaconOptions Beacon { get; set; } = new BeaconOptions();
+
+    /// <summary>
     /// Gets or sets the handler for configuring the cookie jar.
     /// </summary>
     public ICookieFileHandler CookieHandler { get; set; } = new MemoryFileHandler();
@@ -74,6 +82,13 @@ public sealed class IoOptions
     public HttpCacheOptions HttpCache { get; set; } = null;
 
     /// <summary>
+    /// Gets or sets the options for collecting reports, e.g., about network
+    /// errors. By default, this is null, which means that no reports are
+    /// collected.
+    /// </summary>
+    public ReportingOptions Reporting { get; set; } = null;
+
+    /// <summary>
     /// Gets or sets the provider for configuring the web storage provider.
     /// </summary>
     public IStorageProviderFactory StorageFactory { get; set; } = StorageProviderFactory.CreateTemporary();
@@ -89,6 +104,14 @@ public sealed class IoOptions
     public ICacheProviderFactory CacheFactory { get; set; } = CacheProviderFactory.CreateTemporary();
 
     /// <summary>
+    /// Gets or sets the policy deciding about the permissions of powerful
+    /// features, e.g., a <see cref="PermissionPolicy"/>. By default, this is
+    /// null, which means that navigator.permissions is not available and
+    /// the features are not gated.
+    /// </summary>
+    public IPermissionPolicy Permissions { get; set; } = null;
+
+    /// <summary>
     /// Gets or sets the provider for configuring the clipboard platform.
     /// By default, this is null, which means that the clipboard API will not be available.
     /// </summary>
@@ -99,4 +122,23 @@ public sealed class IoOptions
     /// By default, this is null, which means that the geolocation API will not be available.
     /// </summary>
     public IGeolocationPlatform GeolocationPlatform { get; set; } = null;
+
+    /// <summary>
+    /// Gets or sets the provider for configuring the storage manager platform.
+    /// By default, this is null, which means that navigator.storage will not be available.
+    /// </summary>
+    public IStorageManagerPlatform StorageManagerPlatform { get; set; } = null;
+
+    /// <summary>
+    /// Gets or sets the platform running the service workers.
+    /// By default, this is null, which means that navigator.serviceWorker will not be available.
+    /// </summary>
+    public IServiceWorkerPlatform ServiceWorkerPlatform { get; set; } = null;
+
+    /// <summary>
+    /// Gets or sets the platform providing the transport of RTCPeerConnection,
+    /// e.g., a <see cref="LoopbackRtcPlatform"/>. By default, this is null,
+    /// which means that RTCPeerConnection cannot be constructed.
+    /// </summary>
+    public IRtcPlatform WebRtcPlatform { get; set; } = null;
 }

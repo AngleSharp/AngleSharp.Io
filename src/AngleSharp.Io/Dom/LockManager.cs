@@ -93,7 +93,7 @@ namespace AngleSharp.Io.Dom
             }
         }
 
-        private static String GetOrigin(IWindow window)
+        internal static String GetOrigin(IWindow window)
         {
             var href = window?.Location?.Href;
 

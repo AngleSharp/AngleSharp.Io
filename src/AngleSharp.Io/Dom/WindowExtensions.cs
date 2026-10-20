@@ -5,6 +5,7 @@ namespace AngleSharp.Io.Dom
     using AngleSharp.Io;
     using AngleSharp.Dom;
     using AngleSharp.Attributes;
+    using AngleSharp.Io.Reporting;
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -62,6 +63,41 @@ namespace AngleSharp.Io.Dom
         }
 
         /// <summary>
+        /// Queues a report about the window's document, e.g., a deprecation.
+        /// The report is delivered to the window's reporting observers and,
+        /// if a reporting service is registered, queued for its sinks.
+        /// </summary>
+        /// <param name="window">The window the report is about.</param>
+        /// <param name="type">The type of the report.</param>
+        /// <param name="body">The type specific details, if any.</param>
+        /// <param name="destination">The name of the endpoint receiving the report.</param>
+        /// <returns>The queued report.</returns>
+        public static Report QueueReport(this IWindow window, String type, ReportBody body, String destination = null)
+        {
+            if (window == null)
+            {
+                throw new ArgumentNullException(nameof(window));
+            }
+
+            // like browsers, the report omits credentials and the fragment
+            var url = new Url(window.Document?.Url ?? String.Empty)
+            {
+                Fragment = null,
+                UserName = null,
+                Password = null,
+            };
+
+            var report = new Report(type, url.Href, body, destination)
+            {
+                UserAgent = window.Navigator?.UserAgent ?? String.Empty,
+            };
+
+            WindowReports.For(window).Add(report);
+            window.Document?.Context?.GetService<ReportingService>()?.QueueReport(report);
+            return report;
+        }
+
+        /// <summary>
         /// Performs a request using the configured document loader.
         /// </summary>
         /// <param name="window">The originating window.</param>
@@ -111,7 +147,7 @@ namespace AngleSharp.Io.Dom
         private static DocumentRequest CreateRequest(IWindow window, Url url, FetchOptions options)
         {
             var requestOptions = options ?? new FetchOptions();
-            var serializedBody = SerializeBody(requestOptions.Body);
+            var serializedBody = RequestBody.Serialize(requestOptions.Body);
             var request = new DocumentRequest(url)
             {
                 Body = serializedBody.Content,
@@ -146,55 +182,6 @@ namespace AngleSharp.Io.Dom
             return Enum.TryParse(method, true, out HttpMethod parsed) ? parsed : HttpMethod.Get;
         }
 
-        private static SerializedBody SerializeBody(Object body)
-        {
-            if (body == null)
-            {
-                return SerializedBody.Empty;
-            }
-
-            switch (body)
-            {
-                case Stream stream:
-                    if (stream.CanSeek)
-                    {
-                        stream.Seek(0, SeekOrigin.Begin);
-                    }
-
-                    return new SerializedBody(stream);
-                case Byte[] bytes:
-                    return new SerializedBody(new MemoryStream(bytes));
-                case ArraySegment<Byte> segment when segment.Array != null:
-                    return new SerializedBody(new MemoryStream(segment.Array, segment.Offset, segment.Count, false));
-                case FormDataSet formDataSet:
-                    var formDataBody = formDataSet.AsMultipart(null, Encoding.UTF8);
-                    var formDataType = String.Concat("multipart/form-data; boundary=", formDataSet.Boundary);
-                    return new SerializedBody(formDataBody, formDataType);
-                case UrlSearchParams searchParams:
-                    var query = searchParams.ToString();
-                    var queryBytes = Encoding.UTF8.GetBytes(query);
-                    return new SerializedBody(new MemoryStream(queryBytes), "application/x-www-form-urlencoded; charset=UTF-8");
-                case IBlob blob:
-                    var blobBody = blob.Body;
-
-                    if (blobBody != null)
-                    {
-                        if (blobBody.CanSeek)
-                        {
-                            blobBody.Seek(0, SeekOrigin.Begin);
-                        }
-
-                        return new SerializedBody(blobBody, blob.Type);
-                    }
-
-                    break;
-            }
-
-            var content = body.ToString();
-            var contentBytes = Encoding.UTF8.GetBytes(content);
-            return new SerializedBody(new MemoryStream(contentBytes));
-        }
-
         private static Boolean ContainsHeader(Dictionary<String, String> headers, String name)
         {
             foreach (var pair in headers)
@@ -219,21 +206,6 @@ namespace AngleSharp.Io.Dom
             }
 
             return false;
-        }
-
-        private readonly struct SerializedBody
-        {
-            public static readonly SerializedBody Empty = new SerializedBody(Stream.Null);
-
-            public SerializedBody(Stream content, String contentType = null)
-            {
-                Content = content ?? Stream.Null;
-                ContentType = contentType;
-            }
-
-            public Stream Content { get; }
-
-            public String ContentType { get; }
         }
     }
 
