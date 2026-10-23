@@ -1,6 +1,6 @@
 # 1.2.0
 
-Released on Wednesday, October 21 2026.
+Released on Friday, October 23 2026.
 
 - Added an HTTP cache for the requesters (`WithHttpCache`)
 - Added `IoOptions.CreateTemporary` and `IoOptions.CreatePersistent`
@@ -10,6 +10,7 @@ Released on Wednesday, October 21 2026.
 - Added reporting with network error capture and `ReportingObserver` (#46)
 - Added `RTCPeerConnection` with data channels and a loopback platform (#40)
 - Added `navigator.permissions` with a policy gating clipboard, geolocation, and `persist` (#47)
+- Added `navigator.language` and `navigator.languages` (`NavigatorOptions.Languages`) (#49)
 
 # 1.1.0
 

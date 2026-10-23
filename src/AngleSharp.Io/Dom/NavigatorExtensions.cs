@@ -34,6 +34,26 @@ namespace AngleSharp.Io.Dom
         }
 
         /// <summary>
+        /// Gets the user's preferred language, i.e., the first entry of
+        /// navigator.languages.
+        /// </summary>
+        [DomName("language")]
+        [DomAccessor(Accessors.Getter)]
+        public static String Language(this INavigator navigator) => navigator.Languages()[0];
+
+        /// <summary>
+        /// Gets the user's preferred languages, most preferred first.
+        /// </summary>
+        [DomName("languages")]
+        [DomAccessor(Accessors.Getter)]
+        public static String[] Languages(this INavigator navigator)
+        {
+            // navigators not registered by this library fall back to the UI culture
+            var languages = (navigator as Navigator)?.Languages ?? Navigator.GetLanguages(null);
+            return (String[])languages.Clone();
+        }
+
+        /// <summary>
         /// Gets the clipboard object.
         /// </summary>
         [DomName("clipboard")]

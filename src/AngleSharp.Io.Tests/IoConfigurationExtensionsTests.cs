@@ -11,6 +11,7 @@ namespace AngleSharp.Io.Tests
     using AngleSharp.Io.StorageManagerApi;
     using NUnit.Framework;
     using System;
+    using System.Globalization;
     using System.Linq;
     using System.Net.Http;
     using System.Threading.Tasks;
@@ -93,6 +94,56 @@ namespace AngleSharp.Io.Tests
             Assert.IsNull(navigator.Geolocation());
             Assert.IsNull(navigator.Storage());
             Assert.IsNull(navigator.ServiceWorker());
+        }
+
+        [Test]
+        public async Task WithIoExposesConfiguredNavigatorLanguages()
+        {
+            var options = new IoOptions
+            {
+                Navigator = new NavigatorOptions { Languages = new[] { "de-AT", "de", "", "DE-at" } },
+            };
+
+            var context = await OpenContextAsync(Configuration.Default.WithIo(options), "https://io.example/").ConfigureAwait(false);
+            var navigator = GetNavigator(context);
+
+            CollectionAssert.AreEqual(new[] { "de-AT", "de" }, navigator.Languages());
+            Assert.AreEqual("de-AT", navigator.Language());
+        }
+
+        [Test]
+        public async Task WithIoDerivesNavigatorLanguagesFromUiCultureByDefault()
+        {
+            var previous = CultureInfo.CurrentUICulture;
+            CultureInfo.CurrentUICulture = new CultureInfo("fr-CA");
+
+            try
+            {
+                var context = await OpenContextAsync(Configuration.Default.WithIo(new IoOptions()), "https://io.example/").ConfigureAwait(false);
+                var navigator = GetNavigator(context);
+
+                CollectionAssert.AreEqual(new[] { "fr-CA", "fr" }, navigator.Languages());
+                Assert.AreEqual("fr-CA", navigator.Language());
+            }
+            finally
+            {
+                CultureInfo.CurrentUICulture = previous;
+            }
+        }
+
+        [Test]
+        public async Task NavigatorLanguagesReturnsACopy()
+        {
+            var options = new IoOptions
+            {
+                Navigator = new NavigatorOptions { Languages = new[] { "en-US", "en" } },
+            };
+
+            var context = await OpenContextAsync(Configuration.Default.WithIo(options), "https://io.example/").ConfigureAwait(false);
+            var navigator = GetNavigator(context);
+            navigator.Languages()[0] = "xx";
+
+            Assert.AreEqual("en-US", navigator.Language());
         }
 
         private static async Task<IBrowsingContext> OpenContextAsync(IConfiguration configuration, String address)
