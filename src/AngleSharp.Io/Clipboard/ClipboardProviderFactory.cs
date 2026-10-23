@@ -31,7 +31,7 @@ namespace AngleSharp.Io.ClipboardApi
                 return null;
             }
 
-            return _clipboards.GetValue(navigator, _ => new Clipboard(_platform));
+            return _clipboards.GetValue(navigator, _ => new Clipboard(_platform, navigator.Permissions()));
         }
     }
 }

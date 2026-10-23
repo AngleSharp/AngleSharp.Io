@@ -8,6 +8,7 @@ namespace AngleSharp.Io.Network
     using System.Threading;
     using System.Threading.Tasks;
     using AngleSharp.Dom;
+    using AngleSharp.Io.Reporting;
     using HttpMethod = System.Net.Http.HttpMethod;
 
     /// <summary>
@@ -135,14 +136,18 @@ namespace AngleSharp.Io.Network
 
                 return response;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // create a response to avoid failing (#28)
-                return new DefaultResponse
+                // create a response to avoid failing (#28); the cause is kept
+                // for reporting the network error
+                var response = new DefaultResponse
                 {
                     Address = Url.Convert(request.Address),
                     StatusCode = 0
                 };
+
+                NetworkFailures.Attach(response, ex);
+                return response;
             }
         }
 

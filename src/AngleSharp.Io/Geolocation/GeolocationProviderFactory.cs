@@ -31,7 +31,7 @@ namespace AngleSharp.Io.GeolocationApi
                 return null;
             }
 
-            return _geolocations.GetValue(navigator, _ => new Geolocation(_platform));
+            return _geolocations.GetValue(navigator, _ => new Geolocation(_platform, navigator.Permissions()));
         }
     }
 }
