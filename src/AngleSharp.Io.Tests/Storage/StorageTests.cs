@@ -35,6 +35,19 @@ namespace AngleSharp.Io.Tests.Storage
         }
 
         [Test]
+        public void StorageItemOperationsUseTheItems()
+        {
+            var buckets = new System.Collections.Generic.Dictionary<String, StorageBucket>(StringComparer.Ordinal);
+            IStorage storage = new Storage(() => "https://a.example", o => GetOrCreateBucket(buckets, o), (o, b) => { });
+
+            storage.SetItem("a", "1");
+
+            Assert.AreEqual("1", storage.GetItem("a"));
+            Assert.AreEqual("1", storage["a"]);
+            Assert.AreEqual(null, storage.GetItem("b"));
+        }
+
+        [Test]
         public void StoragePersistsViaHandlerOnMutation()
         {
             var handler = new MemoryStorageHandler();
