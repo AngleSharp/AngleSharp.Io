@@ -1,3 +1,9 @@
+# 1.2.1
+
+Released on Friday, October 30 2026.
+
+- Fixed `getItem` and `setItem` missing on `localStorage` and `sessionStorage`
+
 # 1.2.0
 
 Released on Friday, October 23 2026.
