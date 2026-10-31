@@ -1,3 +1,10 @@
+# 1.2.2
+
+Released on Sunday, November 1 2026.
+
+- Fixed `fetch` giving the response of the requester; it gives a `Response` with `status`, `statusText`, `ok`, `url`, `redirected`, `headers`, `text()`, and `json()`
+- Added `FormData` (from a form or set by script) to send with `fetch` and `XMLHttpRequest`
+
 # 1.2.1
 
 Released on Friday, October 30 2026.

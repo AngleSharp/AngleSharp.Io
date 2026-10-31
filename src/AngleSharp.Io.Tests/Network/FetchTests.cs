@@ -116,6 +116,120 @@ namespace AngleSharp.Io.Tests.Network
             Assert.ThrowsAsync<InvalidOperationException>(async () => await document.DefaultView.Fetch("https://example.org/any").ConfigureAwait(false));
         }
 
+        [Test]
+        public async Task FetchAsyncShouldGiveTheStatusHeadersAndText()
+        {
+            var loader = new TestDocumentLoader(request =>
+            {
+                var response = CreateResponse("https://example.org/api/data", "h\u00e9llo");
+                response.StatusCode = System.Net.HttpStatusCode.NotFound;
+                response.Headers["Content-Type"] = "text/plain; charset=utf-8";
+                return new TestDownload(Task.FromResult<IResponse>(response));
+            });
+
+            var window = await OpenWindowAsync(loader, "https://example.org/base/page").ConfigureAwait(false);
+            var response = await window.FetchAsync("/api/data").ConfigureAwait(false);
+
+            Assert.AreEqual(404, response.Status);
+            Assert.AreEqual("Not Found", response.StatusText);
+            Assert.IsFalse(response.IsOk);
+            Assert.IsFalse(response.IsRedirected);
+            Assert.AreEqual("https://example.org/api/data", response.Url);
+            Assert.AreEqual("text/plain; charset=utf-8", response.Headers.Get("content-type"));
+            Assert.IsFalse(response.Headers.Has("X-Missing"));
+            Assert.AreEqual("h\u00e9llo", await response.Text().ConfigureAwait(false));
+            Assert.IsTrue(response.IsBodyUsed);
+            Assert.ThrowsAsync<InvalidOperationException>(() => response.Text());
+        }
+
+        [Test]
+        public async Task FetchAsyncShouldReadJson()
+        {
+            var body = "{ \"token\": \"abc\", \"user\": null, \"count\": 2.5, \"tags\": [\"a\", true, {}], \"escaped\": \"\\u00e9\\n\" }";
+            var loader = new TestDocumentLoader(request =>
+                new TestDownload(Task.FromResult<IResponse>(CreateResponse("https://example.org/api/data", body))));
+
+            var window = await OpenWindowAsync(loader, "https://example.org/base/page").ConfigureAwait(false);
+            var response = await window.FetchAsync("/api/data").ConfigureAwait(false);
+            var json = (IDictionary<String, Object>)await response.Json().ConfigureAwait(false);
+
+            Assert.IsTrue(response.IsOk);
+            Assert.AreEqual("abc", json["token"]);
+            Assert.IsNull(json["user"]);
+            Assert.AreEqual(2.5, json["count"]);
+            Assert.AreEqual(new Object[] { "a", true, new Dictionary<String, Object>() }, json["tags"]);
+            Assert.AreEqual("\u00e9\n", json["escaped"]);
+        }
+
+        [Test]
+        public async Task FetchAsyncShouldRejectInvalidJson()
+        {
+            var loader = new TestDocumentLoader(request =>
+                new TestDownload(Task.FromResult<IResponse>(CreateResponse("https://example.org/api/data", "{ \"a\": "))));
+
+            var window = await OpenWindowAsync(loader, "https://example.org/base/page").ConfigureAwait(false);
+            var response = await window.FetchAsync("/api/data").ConfigureAwait(false);
+
+            Assert.ThrowsAsync<FormatException>(() => response.Json());
+        }
+
+        [Test]
+        public async Task FormDataShouldTakeTheControlsOfTheForm()
+        {
+            var context = BrowsingContext.New(Configuration.Default);
+            var document = await context.OpenAsync(req => req.Content(@"<form id=f>
+                <input name=a value=1><input name=b value=2 disabled><input type=checkbox name=c checked><input type=checkbox name=d>
+                <input type=submit name=s value=go><select name=e multiple><option selected>x<option>y<option selected value=z>Z</select>
+                <textarea name=f>text</textarea><input value=unnamed></form>")).ConfigureAwait(false);
+            var form = (AngleSharp.Html.Dom.IHtmlFormElement)document.GetElementById("f");
+
+            var data = new FormData(form);
+
+            Assert.AreEqual("1", data.Get("a"));
+            Assert.IsFalse(data.Has("b"));
+            Assert.AreEqual("on", data.Get("c"));
+            Assert.IsFalse(data.Has("d"));
+            Assert.IsFalse(data.Has("s"));
+            Assert.AreEqual(new[] { "x", "z" }, data.GetAll("e"));
+            Assert.AreEqual("text", data.Get("f"));
+        }
+
+        [Test]
+        public void FormDataShouldAppendSetAndDelete()
+        {
+            var data = new FormData();
+            data.Append("a", "1");
+            data.Append("b", "2");
+            data.Append("a", "3");
+
+            data.Set("a", "4");
+            Assert.AreEqual(new[] { "4" }, data.GetAll("a"));
+
+            data.Delete("b");
+            Assert.IsFalse(data.Has("b"));
+            Assert.IsNull(data.Get("b"));
+        }
+
+        [Test]
+        public async Task FetchShouldSendFormDataAsMultipart()
+        {
+            var loader = new TestDocumentLoader(request =>
+                new TestDownload(Task.FromResult<IResponse>(CreateResponse("https://example.org/form", "ok"))));
+
+            var window = await OpenWindowAsync(loader, "https://example.org/base/page").ConfigureAwait(false);
+            var data = new FormData();
+            data.Append("name", "Ada");
+
+            await window.FetchAsync("/form", new FetchOptions { Method = "POST", Body = data }).ConfigureAwait(false);
+
+            Assert.IsTrue(loader.LastRequest.Headers[HeaderNames.ContentType].StartsWith("multipart/form-data; boundary="));
+
+            using (var reader = new StreamReader(loader.LastRequest.Body, Encoding.UTF8, true, 1024, true))
+            {
+                StringAssert.Contains("name=\"name\"", reader.ReadToEnd());
+            }
+        }
+
         private static async Task<IWindow> OpenWindowAsync(IDocumentLoader loader, String address)
         {
             var config = Configuration.Default.WithOnly<IDocumentLoader>(_ => loader);

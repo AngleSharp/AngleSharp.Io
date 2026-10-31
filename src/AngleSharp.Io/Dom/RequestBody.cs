@@ -32,6 +32,8 @@ namespace AngleSharp.Io.Dom
                     return new SerializedBody(new MemoryStream(bytes));
                 case ArraySegment<Byte> segment when segment.Array != null:
                     return new SerializedBody(new MemoryStream(segment.Array, segment.Offset, segment.Count, false));
+                case FormData formData:
+                    return Serialize(formData.ToDataSet());
                 case FormDataSet formDataSet:
                     var formDataBody = formDataSet.AsMultipart(null, Encoding.UTF8);
                     var formDataType = String.Concat("multipart/form-data; boundary=", formDataSet.Boundary);
