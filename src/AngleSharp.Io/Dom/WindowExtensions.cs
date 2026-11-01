@@ -103,7 +103,6 @@ namespace AngleSharp.Io.Dom
         /// <param name="window">The originating window.</param>
         /// <param name="url">The request URL.</param>
         /// <returns>The fetched response.</returns>
-        [DomName("fetch")]
         public static Task<IResponse> Fetch(this IWindow window, String url)
         {
             return Fetch(window, url, null);
@@ -116,7 +115,6 @@ namespace AngleSharp.Io.Dom
         /// <param name="url">The request URL.</param>
         /// <param name="options">The optional request options.</param>
         /// <returns>The fetched response.</returns>
-        [DomName("fetch")]
         public static async Task<IResponse> Fetch(this IWindow window, String url, FetchOptions options)
         {
             if (window == null)
@@ -142,6 +140,23 @@ namespace AngleSharp.Io.Dom
             var download = loader.FetchAsync(request);
 
             return await download.Task.ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Performs a request like the fetch API (<c>window.fetch</c>), i.e., giving a response
+        /// whose body can be read as text or JSON.
+        /// </summary>
+        /// <param name="window">The originating window.</param>
+        /// <param name="url">The request URL.</param>
+        /// <param name="options">The optional request options.</param>
+        /// <returns>The fetched response.</returns>
+        [DomName("fetch")]
+        public static async Task<Response> FetchAsync(this IWindow window, String url, FetchOptions options = null)
+        {
+            var response = await Fetch(window, url, options).ConfigureAwait(false);
+            var target = new Url(new Url(window.Document.Url), url);
+            var isRedirected = response.Address != null && !response.Address.Equals(target);
+            return new Response(response, isRedirected);
         }
 
         private static DocumentRequest CreateRequest(IWindow window, Url url, FetchOptions options)
