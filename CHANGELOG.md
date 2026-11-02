@@ -1,3 +1,13 @@
+# 1.3.0
+
+Released on Monday, November 2 2026.
+
+- Updated `RtcIceServer.Urls` to `RtcIceServerUrls`, as `urls` takes a single URL or several
+- Added `Notification` with `requestPermission` and an injected delivery platform (#41)
+- Added `showOpenFilePicker` and `showSaveFilePicker` with writable file handles (#42)
+- Added `sync` and `periodicSync` on service worker registrations with an injected scheduler (#44)
+- Added `pushManager` on service worker registrations with an injected transport (#45)
+
 # 1.2.2
 
 Released on Sunday, November 1 2026.

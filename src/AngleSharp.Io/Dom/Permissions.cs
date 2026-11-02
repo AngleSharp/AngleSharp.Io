@@ -101,5 +101,13 @@ public sealed class Permissions
         }
     }
 
+    // constructors and window methods have no navigator at hand, and asking
+    // for one would leave them ungated when just the navigator is missing
+    internal static Permissions ForWindow(IWindow window)
+    {
+        var policy = window?.Document?.Context?.GetService<IPermissionPolicy>();
+        return policy is null ? null : new Permissions(policy, () => LockManager.GetOrigin(window));
+    }
+
     private String GetOrigin() => _getOrigin.Invoke() ?? String.Empty;
 }

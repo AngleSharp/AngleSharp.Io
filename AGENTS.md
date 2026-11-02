@@ -52,6 +52,13 @@ The main integration surface is `src/AngleSharp.Io/IoConfigurationExtensions.cs`
   using a powerful feature take the navigator's `Permissions` (null = ungated) and call
   `EnsureGrantedAsync` / `RequestAsync` instead of their own checks; add new names to
   `PermissionNames` (`src/AngleSharp.Io/Permissions`).
+- `WithNotifications(...)` / `WithFileSystemAccess(...)` register their platforms like `WithWebRtc(...)`;
+  `Notification` and the pickers on the window resolve them from the window's context.
+- `WithBackgroundSync(...)` / `WithPush(...)` provide `registration.sync`, `.periodicSync`, and
+  `.pushManager`. Registrations are shared and have no context, so `ServiceWorkerProviderFactory`
+  hands these services and the permission policy to the `ServiceWorkerRegistry` when a navigator
+  accesses the container, keeping the order of the `With...` calls irrelevant. Their permissions
+  always use the origin of the registration.
 
 Cookie subsystem layout (`src/AngleSharp.Io/Cookie`):
 
@@ -84,6 +91,28 @@ From `.github/CONTRIBUTING.md` and `.editorconfig` — these differ from typical
   you are editing rather than converting it.
 - Comments in the newer code explain *why* a non-obvious construct exists (prototype cycles,
   laziness, Jint quirks). Keep that density — do not narrate what the code already says.
+
+## Exposing APIs to scripts
+
+Types with `[DomName]` are bound by AngleSharp.Js (rules below as of 1.1.5), which this repo does not
+reference, so its unit tests cannot catch binding problems. It is worth trying new APIs from a script.
+
+- Instance members go on the prototype, static members on the constructor. A static member may
+  take an `IWindow` as first parameter, which is provided implicitly, as for constructors.
+- Several methods or `[DomConstructor]`s with the same name in one type are overloads, picked per call
+  by the arguments. A union such as `(String or Blob or WriteParams)` is written as such overloads,
+  either on the class or as extension methods (see `FileSystemWritableFileStreamExtensions`). As a
+  dictionary member cannot be overloaded, it uses a class with implicit operators (see `FilePickerSuffixes`).
+  An implicit operator back out (see `RtcIceServerUrls`) gives what scripts receive when reading it.
+- Overriding `ToString` on a type makes it a stringifier, i.e., scripts get a `toString`.
+- Only extension methods of a `[DomExposed("X")]` class are added to `X`.
+- Parameters and dictionary members convert to primitives, all numeric types, enums, delegates, DOM
+  types, nested dictionaries (`[DomName]` properties with public setters), `Dictionary<String, T>`,
+  sequences (arrays and the interfaces they implement), `Byte[]` and `ArraySegment<Byte>` for buffers,
+  and nullable forms of all value types. `Object` receives bytes for a buffer, but the raw Jint value
+  for other objects, so never `ToString` it blindly.
+- Return values: `[DomLiterals]` enums are strings, other enums numbers, `Byte[]` an `ArrayBuffer`,
+  `ArraySegment<Byte>` a `Uint8Array`, other arrays JS arrays, `IDictionary<String, Object>` a plain object, and a `Task` a promise.
 
 ## Tests
 

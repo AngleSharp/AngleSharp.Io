@@ -5,6 +5,7 @@ namespace AngleSharp.Io.Dom
     using AngleSharp.Io;
     using AngleSharp.Dom;
     using AngleSharp.Attributes;
+    using AngleSharp.Io.FileSystemApi;
     using AngleSharp.Io.Reporting;
     using System;
     using System.Collections.Generic;
@@ -61,6 +62,26 @@ namespace AngleSharp.Io.Dom
             var factory = window?.Document?.Context?.GetService<ICacheProviderFactory>();
             return factory?.GetCaches(window);
         }
+
+        /// <summary>
+        /// Lets the user pick existing files via the registered platform.
+        /// </summary>
+        /// <param name="window">The window showing the picker.</param>
+        /// <param name="options">The optional options of the picker.</param>
+        /// <returns>The handles of the picked files.</returns>
+        [DomName("showOpenFilePicker")]
+        public static Task<FileSystemFileHandle[]> ShowOpenFilePicker(this IWindow window, OpenFilePickerOptions options = null) =>
+            FilePickers.ShowOpenFilePickerAsync(window, options);
+
+        /// <summary>
+        /// Lets the user pick the file to save to via the registered platform.
+        /// </summary>
+        /// <param name="window">The window showing the picker.</param>
+        /// <param name="options">The optional options of the picker.</param>
+        /// <returns>The handle of the picked file.</returns>
+        [DomName("showSaveFilePicker")]
+        public static Task<FileSystemFileHandle> ShowSaveFilePicker(this IWindow window, SaveFilePickerOptions options = null) =>
+            FilePickers.ShowSaveFilePickerAsync(window, options);
 
         /// <summary>
         /// Queues a report about the window's document, e.g., a deprecation.

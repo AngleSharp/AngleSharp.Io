@@ -15,10 +15,16 @@ namespace AngleSharp.Io.Dom
     public sealed class ServiceWorkerRegistration : EventTarget
     {
         private readonly ServiceWorkerRegistry _registry;
+        private readonly Object _features;
+
+        private SyncManager _sync;
+        private PeriodicSyncManager _periodicSync;
+        private PushManager _pushManager;
 
         internal ServiceWorkerRegistration(ServiceWorkerRegistry registry, String scope)
         {
             _registry = registry;
+            _features = new Object();
             Scope = scope;
         }
 
@@ -53,6 +59,75 @@ namespace AngleSharp.Io.Dom
         public ServiceWorker Active { get; internal set; }
 
         /// <summary>
+        /// Gets the manager for one-off background tasks, which is only
+        /// available if a sync platform has been registered.
+        /// </summary>
+        [DomName("sync")]
+        public SyncManager Sync
+        {
+            get
+            {
+                var platform = _registry.SyncPlatform;
+
+                if (platform is null)
+                {
+                    return null;
+                }
+
+                lock (_features)
+                {
+                    return _sync ??= new SyncManager(this, platform);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the manager for periodic background tasks, which is only
+        /// available if a sync platform has been registered.
+        /// </summary>
+        [DomName("periodicSync")]
+        public PeriodicSyncManager PeriodicSync
+        {
+            get
+            {
+                var platform = _registry.SyncPlatform;
+
+                if (platform is null)
+                {
+                    return null;
+                }
+
+                lock (_features)
+                {
+                    return _periodicSync ??= new PeriodicSyncManager(this, platform);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the manager for the push subscription, which is only available
+        /// if a push platform has been registered.
+        /// </summary>
+        [DomName("pushManager")]
+        public PushManager PushManager
+        {
+            get
+            {
+                var platform = _registry.PushPlatform;
+
+                if (platform is null)
+                {
+                    return null;
+                }
+
+                lock (_features)
+                {
+                    return _pushManager ??= new PushManager(this, platform);
+                }
+            }
+        }
+
+        /// <summary>
         /// Adds or removes the handler for the updatefound event.
         /// </summary>
         [DomName("onupdatefound")]
@@ -80,6 +155,57 @@ namespace AngleSharp.Io.Dom
         internal ServiceWorkerRegistry Registry => _registry;
 
         internal ServiceWorker NewestWorker => Installing ?? Waiting ?? Active;
+
+        // registrations outlive documents and are shared by the contexts of a
+        // registry, so the permissions are the ones of the registration's own
+        // origin instead of the origin of some active document
+        internal Permissions Permissions
+        {
+            get
+            {
+                var policy = _registry.PermissionPolicy;
+                return policy is null ? null : new Permissions(policy, () => new Url(Scope).Origin);
+            }
+        }
+
+        internal Boolean HasPushEndpoint(String endpoint)
+        {
+            lock (_features)
+            {
+                return _pushManager?.HasEndpoint(endpoint) ?? false;
+            }
+        }
+
+        internal Task DispatchPushAsync(ServiceWorker worker, PushMessageData data) => PushManager.DispatchAsync(worker, data);
+
+        internal async Task TerminateFeaturesAsync()
+        {
+            SyncManager sync;
+            PeriodicSyncManager periodicSync;
+            PushManager pushManager;
+
+            lock (_features)
+            {
+                sync = _sync;
+                periodicSync = _periodicSync;
+                pushManager = _pushManager;
+            }
+
+            if (sync != null)
+            {
+                await sync.TerminateAsync().ConfigureAwait(false);
+            }
+
+            if (periodicSync != null)
+            {
+                await periodicSync.TerminateAsync().ConfigureAwait(false);
+            }
+
+            if (pushManager != null)
+            {
+                await pushManager.TerminateAsync().ConfigureAwait(false);
+            }
+        }
 
         internal void RaiseUpdateFound() => Dispatch(new Event(ServiceWorkerEventNames.UpdateFound));
     }

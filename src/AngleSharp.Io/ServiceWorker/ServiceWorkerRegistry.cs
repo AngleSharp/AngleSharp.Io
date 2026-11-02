@@ -39,6 +39,27 @@ namespace AngleSharp.Io.ServiceWorkerApi
         public IServiceWorkerPlatform Platform => _platform;
 
         /// <summary>
+        /// Gets or sets the platform behind registration.sync and
+        /// registration.periodicSync. If not set, the platform registered via
+        /// WithBackgroundSync is used once a navigator accesses the container.
+        /// </summary>
+        public ISyncPlatform SyncPlatform { get; set; }
+
+        /// <summary>
+        /// Gets or sets the platform behind registration.pushManager. If not
+        /// set, the platform registered via WithPush is used once a navigator
+        /// accesses the container.
+        /// </summary>
+        public IPushPlatform PushPlatform { get; set; }
+
+        /// <summary>
+        /// Gets or sets the policy gating background sync and push. If not
+        /// set, the policy registered via WithPermissions is used once a
+        /// navigator accesses the container.
+        /// </summary>
+        public IPermissionPolicy PermissionPolicy { get; set; }
+
+        /// <summary>
         /// Registers the given script for the given scope. A registration
         /// with the same script and type is returned as is, unless the update
         /// via cache mode changed, which triggers an update check. Otherwise
@@ -174,6 +195,46 @@ namespace AngleSharp.Io.ServiceWorkerApi
             return clients.Length;
         }
 
+        /// <summary>
+        /// Delivers a message received by the push service to the active
+        /// worker of the registration subscribed with the given endpoint. A
+        /// failing platform faults the returned task.
+        /// </summary>
+        /// <param name="endpoint">The endpoint of the subscription.</param>
+        /// <param name="data">The decrypted payload, or null if the message has none.</param>
+        /// <returns>True if the message has been passed to a worker, otherwise false.</returns>
+        public async Task<Boolean> DeliverPushAsync(String endpoint, Byte[] data)
+        {
+            ServiceWorkerRegistration[] registrations;
+
+            lock (_registrations)
+            {
+                registrations = _registrations.Values.ToArray();
+            }
+
+            var registration = registrations.FirstOrDefault(item => item.HasPushEndpoint(endpoint));
+            var worker = registration?.Active;
+
+            if (worker?.State != ServiceWorkerState.Activated)
+            {
+                return false;
+            }
+
+            await registration.DispatchPushAsync(worker, data is null ? null : new PushMessageData(data)).ConfigureAwait(false);
+            return true;
+        }
+
+        // the order of the configuration extensions must not matter here, an
+        // ungated push because of WithPermissions coming last would be a trap;
+        // the services are only known to the context, and accessing the
+        // container is what every way to a registration has in common
+        internal void Attach(IBrowsingContext context)
+        {
+            SyncPlatform ??= context.GetService<ISyncPlatform>();
+            PushPlatform ??= context.GetService<IPushPlatform>();
+            PermissionPolicy ??= context.GetService<IPermissionPolicy>();
+        }
+
         internal void Track(ServiceWorkerContainer container)
         {
             lock (_containers)
@@ -243,6 +304,7 @@ namespace AngleSharp.Io.ServiceWorkerApi
                 registration.Installing = null;
                 registration.Waiting = null;
                 registration.Active = null;
+                await registration.TerminateFeaturesAsync().ConfigureAwait(false);
                 return true;
             }
             finally

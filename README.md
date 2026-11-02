@@ -26,6 +26,10 @@ var options = new IoOptions
     StorageManagerPlatform = myStorageManagerPlatform,
     ServiceWorkerPlatform = myServiceWorkerPlatform,
     WebRtcPlatform = new LoopbackRtcPlatform(),
+    NotificationPlatform = myNotificationPlatform,
+    FileSystemPlatform = myFileSystemPlatform,
+    SyncPlatform = mySyncPlatform,
+    PushPlatform = myPushPlatform,
 };
 
 var config = Configuration.Default
@@ -34,7 +38,8 @@ var config = Configuration.Default
 ```
 
 `WithIo` wires navigator, cookies, requesters, storage, IndexedDB, and cache in one call.
-Clipboard, geolocation, the storage manager, service workers, and WebRTC are only enabled when platforms are provided.
+Clipboard, geolocation, the storage manager, service workers, WebRTC, notifications, the file system
+access, background sync, and push are only enabled when platforms are provided.
 The [permissions](#permissions) are only checked when a policy is provided.
 
 To keep all browsing data in one place, start from `IoOptions.CreateTemporary()` (memory only) or
@@ -313,9 +318,13 @@ policy decides whether the powerful features may be used, so there is one place 
 - `clipboard.readText` / `clipboard.writeText` check `clipboard-read` / `clipboard-write`
 - `geolocation.getCurrentPosition` checks `geolocation`
 - `storage.persist` checks `persistent-storage` (and resolves with `false` instead of rejecting)
+- `Notification` checks `notifications` (and dispatches `error` instead of rejecting)
+- the file pickers and handles check `file-system-read` / `file-system-write`
+- `registration.sync` / `registration.periodicSync` check `background-sync` / `periodic-background-sync`
+- `registration.pushManager.subscribe` checks `push` (and `notifications` for `userVisibleOnly`)
 
-The names in `PermissionNames` are known by default (`notifications` can be queried, but nothing
-uses it yet). A denied permission rejects with a `DomException` named `NotAllowedError`.
+The names in `PermissionNames` are known by default. A denied permission rejects with a `DomException`
+named `NotAllowedError`.
 
 `PermissionPolicy` keeps the states in memory. Every permission starts as `prompt`, and as no user
 can answer the prompt in a headless browser, the feature is denied until you grant the permission:
@@ -469,6 +478,108 @@ var granted = await storage.Persist();
 var persisted = await storage.Persisted();
 ```
 
+### Notifications
+
+AngleSharp.Io provides the `Notification` constructor with its permission flow. Delivering a
+notification is up to an `INotificationPlatform`; whether it may be shown is up to the
+[permission policy](#permissions), which answers `notifications` as for every other feature:
+
+- `new Notification(title, options)` with `title`, `dir`, `lang`, `body`, `tag`, `image`, `icon`, `badge`,
+  `timestamp`, `renotify`, `silent`, `requireInteraction`, `data`, `close`, and the `show`, `error`,
+  `click`, and `close` events
+- `Notification.GetPermission(window)` / `Notification.RequestPermission(window)`, i.e., the static
+  `permission` and `requestPermission`, giving `default`, `granted`, or `denied`
+
+The included `NotificationPlatform` delegates to optional callbacks. It reports what the user does
+via `NotifyClicked` and `NotifyClosed` on the notification:
+
+```cs
+var policy = new PermissionPolicy
+{
+    // stands in for the user; the answer is remembered for the origin
+    PromptHandler = (origin, name) => Task.FromResult(PermissionState.Granted),
+};
+
+var platform = new NotificationPlatform
+{
+    Show = notification => MyDesktop.ShowAsync(notification.Title, notification.Body, notification.NotifyClicked),
+    Close = notification => MyDesktop.RemoveAsync(notification.Tag),
+};
+
+var config = Configuration.Default
+    .WithPermissions(policy)
+    .WithNotifications(platform);
+```
+
+```cs
+var window = document.DefaultView;
+var permission = await Notification.RequestPermission(window); // NotificationPermission.Granted
+var notification = new Notification(window, "Hello", new NotificationOptions { Body = "World" });
+var shown = await notification.Delivery;                       // true once the platform showed it
+notification.Close();
+```
+
+As in browsers, constructing a notification without the permission does not throw and does not
+prompt: nothing reaches the platform and the `error` event is dispatched. A dismissed prompt leaves
+the permission at `default`. Without `WithPermissions` notifications are not gated, and without a
+platform the constructor throws a `NotSupportedError`. Events are dispatched in tasks of the
+context's event loop; without an event loop they are dispatched on a background thread, so use
+`Delivery` to learn about the outcome reliably. Replacing notifications with the same `tag` and
+displaying anything are up to the platform; `actions` and notifications on service worker
+registrations are not supported.
+
+### File System Access
+
+AngleSharp.Io provides a subset of the File System Access API, where the pickers and all access to
+the files go through an `IFileSystemPlatform`:
+
+- `window.showOpenFilePicker` (`multiple`, `types`, `excludeAcceptAllOption`, `id`, `startIn`) and
+  `window.showSaveFilePicker` (additionally `suggestedName`)
+- `FileSystemFileHandle` with `kind`, `name`, `isSameEntry`, `queryPermission`, `requestPermission`,
+  `getFile`, and `createWritable` (with `keepExistingData`)
+- `FileSystemWritableFileStream` with `write` (strings, bytes, blobs, or `WriteParams`), `seek`,
+  `truncate`, `close`, and `abort`
+
+`MemoryFileSystemPlatform` keeps the files in memory for deterministic tests. For anything else
+implement `IFileSystemPlatform`:
+
+```cs
+var platform = new MemoryFileSystemPlatform();
+platform.SetFile("notes.txt", Encoding.UTF8.GetBytes("Hello"), "text/plain");
+platform.OpenFilePicker = options => new[] { "notes.txt" }; // stands in for the user
+platform.SaveFilePicker = options => options.SuggestedName; // null dismisses the picker
+
+var config = Configuration.Default.WithFileSystemAccess(platform);
+```
+
+```cs
+var window = document.DefaultView;
+var handle = (await window.ShowOpenFilePicker())[0];
+var file = await handle.GetFile();
+
+var stream = await handle.CreateWritable();
+await stream.Write("World");
+await stream.Close();                                          // replaces the content of the file
+```
+
+All writes go to a buffer that replaces the file on `close`, so the file stays untouched if the
+stream is aborted or the platform fails, given that its `WriteFileAsync` is atomic. Dismissing a
+picker rejects with an `AbortError`. Handles to the same file are different objects, which
+`isSameEntry` recognizes by the `Id` of the platform's `FileSystemEntry`.
+
+The [permission policy](#permissions) is asked for `file-system-read` and `file-system-write`, where
+write access includes reading; browsers express this as the mode of a single `file-system`
+permission. A denied permission rejects with a `NotAllowedError`, also for a stream that is already
+open. The pickers require a secure context, which can be turned off:
+
+```cs
+var options = new FileSystemAccessOptions { RequireSecureContext = false };
+var config = Configuration.Default.WithFileSystemAccess(platform, options);
+```
+
+Directory handles and the origin private file system are not supported. Transient user activation is
+not required as there is no user.
+
 ### Service Workers
 
 AngleSharp.Io provides `navigator.serviceWorker` with a minimal registration surface:
@@ -533,6 +644,114 @@ is activated (or redundant if its installation failed), new workers are activate
 fetched, the platform decides whether a script changed (`CheckForUpdate`) and the scope cannot be
 wider than the script's directory. Requests are matched by their own URL and the controller is
 determined on access, as clients are not tracked.
+
+### Background Sync
+
+AngleSharp.Io exposes the managers for deferred work on service worker registrations. An
+`ISyncPlatform` decides when tasks run and runs them in the worker, so tests stay deterministic:
+
+- `registration.sync` with `register` and `getTags`, where a tag is removed once its task succeeded
+  or ran out of attempts (three, the last one with `LastChance`)
+- `registration.periodicSync` with `register` (with `minInterval`), `getTags`, and `unregister`
+
+The platform receives a `SyncTask` when it should plan a firing and calls `FireAsync` when it is time.
+The included `SyncPlatform` delegates to optional callbacks; without them tasks only fire when you
+call `FireAsync`:
+
+```cs
+var tasks = new List<SyncTask>();
+var platform = new SyncPlatform
+{
+    Schedule = task => { tasks.Add(task); return Task.CompletedTask; },
+    Cancel = task => { tasks.Remove(task); return Task.CompletedTask; },
+    Dispatch = (worker, task) => MyWorkerHost.RunAsync(worker, task.Tag), // a faulted task is a failure
+};
+
+var config = Configuration.Default
+    .WithNavigator()
+    .WithRequesters()
+    .WithServiceWorkers()
+    .WithBackgroundSync(platform);
+```
+
+```cs
+var registration = await container.Register("/app/sw.js");
+await registration.Sync.Register("outbox");
+await registration.PeriodicSync.Register("news", new BackgroundSyncOptions { MinInterval = 3600000 });
+
+await tasks[0].FireAsync(); // true if the event was handled successfully
+```
+
+Registering a known tag does not add a second task: a one-off task being fired fires once more
+afterwards, and a periodic task picks up a changed `minInterval`. Periodic tasks and one-off tasks to
+retry are passed to `ScheduleAsync` again after firing, while `unregister` and removing the service
+worker registration end up in `CancelAsync`. `SyncManager.Unregister` also exists for hosts, but as it
+is not part of the specification it is not exposed to scripts.
+
+The tasks require an active worker (otherwise rejecting with an `InvalidStateError`) and a secure
+origin. The [permission policy](#permissions) is asked for `background-sync` and
+`periodic-background-sync` for the origin of the registration. Compared to browsers, the
+`InvalidAccessError` for registering without an open page does not exist as clients are not tracked.
+
+### Push
+
+AngleSharp.Io provides `registration.pushManager` with the subscription lifecycle. An `IPushPlatform`
+talks to the push service and delivers messages to the worker:
+
+- `pushManager` with `subscribe` (with `userVisibleOnly` and `applicationServerKey`), `getSubscription`,
+  and `permissionState`
+- subscriptions with `endpoint`, `expirationTime`, `options`, `getKey`, `toJSON`, and `unsubscribe`
+- `PushMessageData` with `text`, `json`, `arrayBuffer`, `bytes`, and `blob` for the payload
+
+The included `PushPlatform` delegates to optional callbacks. Without them no push service is involved
+and subscriptions get a generated endpoint below `https://push.invalid/`, which is enough for testing
+the lifecycle:
+
+```cs
+var platform = new PushPlatform
+{
+    Subscribe = (origin, scope, options) => MyPushService.SubscribeAsync(origin, scope, options),
+    Unsubscribe = subscription => MyPushService.UnsubscribeAsync(subscription.Endpoint),
+    Dispatch = (worker, data) => MyWorkerHost.PushAsync(worker, data?.Text()),
+};
+
+var config = Configuration.Default
+    .WithNavigator()
+    .WithRequesters()
+    .WithServiceWorkers()
+    .WithPush(platform);
+```
+
+```cs
+var registration = await container.Register("/app/sw.js");
+var subscription = await registration.PushManager.Subscribe(new PushSubscriptionOptionsInit
+{
+    UserVisibleOnly = true,
+    ApplicationServerKey = myBase64UrlKey,
+});
+
+// when a message arrives; decrypting it (aes128gcm) is up to the host
+var registry = context.GetService<ServiceWorkerRegistry>();
+await registry.DeliverPushAsync(subscription.Endpoint, decryptedPayload);
+```
+
+A subscription belongs to its registration and hence to its origin, and it is removed with the
+registration. Subscribing again returns the subscription, unless the options differ, which rejects
+with an `InvalidStateError`. A failing `SubscribeAsync` rejects with an `AbortError`, unless it is
+faulted with a `DomException`, which is passed on. As in the specification, `unsubscribe` deactivates
+the subscription even if `UnsubscribeAsync` fails, so retrying is up to the platform. The form of the
+`applicationServerKey` is validated, but not whether it lies on the curve.
+
+The [permission policy](#permissions) is asked for `push` and, for `userVisibleOnly` subscriptions,
+for `notifications` as well, as their messages have to end in a notification. A denied permission
+rejects with a `NotAllowedError` without involving the platform. The `pushsubscriptionchange` event
+is not supported.
+
+### Using the APIs from Scripts
+
+Everything above is available from .NET. To use these APIs from scripts, which includes the static
+members `Notification.permission` and `Notification.requestPermission`, the `types` of the file
+pickers, and buffers for `write` and `applicationServerKey`, *AngleSharp.Js* 1.1.5 or later is needed.
 
 ### Beacon
 

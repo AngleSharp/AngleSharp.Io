@@ -32,6 +32,13 @@ namespace AngleSharp.Io.ServiceWorkerApi
                 return null;
             }
 
+            var context = NavigatorExtensions.GetContext(navigator);
+
+            if (context != null)
+            {
+                _registry.Attach(context);
+            }
+
             // the client URL is resolved per call as the active document
             // changes while the navigator stays the same
             return _containers.GetValue(navigator, _ => new ServiceWorkerContainer(_registry, () => GetClientUrl(navigator)));

@@ -69,7 +69,7 @@ namespace AngleSharp.Io.WebRtc
         /// Gets or sets the URLs of the server, e.g., stun:stun.example.org.
         /// </summary>
         [DomName("urls")]
-        public String[] Urls { get; set; } = Array.Empty<String>();
+        public RtcIceServerUrls Urls { get; set; } = new RtcIceServerUrls();
 
         /// <summary>
         /// Gets or sets the username for a TURN server.
@@ -85,19 +85,19 @@ namespace AngleSharp.Io.WebRtc
 
         internal RtcIceServer Clone() => new RtcIceServer
         {
-            Urls = (Urls ?? Array.Empty<String>()).ToArray(),
+            Urls = new RtcIceServerUrls((Urls?.Values ?? Array.Empty<String>()).ToArray()),
             Username = Username,
             Credential = Credential,
         };
 
         internal void Validate()
         {
-            if (Urls is null || Urls.Length == 0)
+            if (Urls is null || Urls.Values.Length == 0)
             {
                 throw new DomException(DomError.Syntax);
             }
 
-            foreach (var url in Urls)
+            foreach (var url in Urls.Values)
             {
                 var separator = url?.IndexOf(':') ?? -1;
                 var scheme = separator > 0 ? url.Substring(0, separator).ToLowerInvariant() : String.Empty;
@@ -134,5 +134,55 @@ namespace AngleSharp.Io.WebRtc
     [DomName("RTCAnswerOptions")]
     public sealed class RtcAnswerOptions
     {
+    }
+
+    /// <summary>
+    /// Represents the URLs of a STUN or TURN server, which are given as either a
+    /// single URL or several of them. Scripts always read them as an array.
+    /// </summary>
+    public sealed class RtcIceServerUrls
+    {
+        /// <summary>
+        /// Creates new URLs.
+        /// </summary>
+        /// <param name="values">The URLs.</param>
+        public RtcIceServerUrls(params String[] values)
+        {
+            Values = values ?? Array.Empty<String>();
+        }
+
+        /// <summary>
+        /// Gets the URLs.
+        /// </summary>
+        public String[] Values { get; }
+
+        /// <summary>
+        /// Gets or sets the URL at the given index.
+        /// </summary>
+        /// <param name="index">The zero-based index.</param>
+        /// <returns>The URL.</returns>
+        public String this[Int32 index]
+        {
+            get => Values[index];
+            set => Values[index] = value;
+        }
+
+        /// <summary>
+        /// Converts a single URL.
+        /// </summary>
+        /// <param name="value">The URL.</param>
+        public static implicit operator RtcIceServerUrls(String value) => new RtcIceServerUrls(new[] { value });
+
+        /// <summary>
+        /// Converts several URLs.
+        /// </summary>
+        /// <param name="values">The URLs.</param>
+        public static implicit operator RtcIceServerUrls(String[] values) => new RtcIceServerUrls(values);
+
+        /// <summary>
+        /// Gets the URLs as an array.
+        /// </summary>
+        /// <param name="urls">The URLs.</param>
+        public static implicit operator String[](RtcIceServerUrls urls) => urls?.Values;
     }
 }
