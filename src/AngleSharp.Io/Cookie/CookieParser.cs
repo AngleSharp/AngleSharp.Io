@@ -227,7 +227,7 @@ namespace AngleSharp.Io.Cookie
         private Boolean TryParsePath(Int32 end, out String path)
         {
             path = Cut(_index, end);
-            return path.Length > 0 && path[0] == '/';
+            return path.Length > 0 && path[0] == '/' && !InvalidChars.IsMatch(path);
         }
 
         public Boolean TryParseInteger(Int32 end, out Int32 value)

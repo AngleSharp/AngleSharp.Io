@@ -433,6 +433,22 @@ namespace AngleSharp.Io.Tests.Cookie
             Assert.IsFalse(cookie.IsHttpOnly);
         }
 
+        [Test]
+        public void PathWithControlCharactersIsIgnored()
+        {
+            var handler = new MemoryFileHandler();
+            ICookieProvider provider = new AdvancedCookieProvider(handler);
+            provider.SetCookie(new Url("https://evil.example/"),
+                "x=y; Max-Age=100000; Path=/\tTRUE\t2000000000\tk\tv\n.bank.example\tTRUE\t/\tFALSE\t2000000000\tsession\tATTACKER\n#");
+
+            Assert.AreEqual("/", ((AdvancedCookieProvider)provider).Cookies.Single().Path);
+
+            ICookieProvider reloaded = new AdvancedCookieProvider(handler);
+
+            Assert.AreEqual(String.Empty, reloaded.GetCookie(new Url("https://bank.example/")));
+            StringAssert.DoesNotContain("k=v", reloaded.GetCookie(new Url("https://evil.example/")));
+        }
+
         private static AdvancedCookieProvider CreateContainerWithSetup(Action<ICookieProvider> setup)
         {
             var container = new AdvancedCookieProvider(new MemoryFileHandler());
