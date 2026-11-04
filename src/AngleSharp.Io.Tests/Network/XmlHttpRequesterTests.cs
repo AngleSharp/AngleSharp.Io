@@ -278,6 +278,27 @@ namespace AngleSharp.Io.Tests.Network
             Assert.IsNull(contentType);
         }
 
+        [Test]
+        public async Task SendFromHttpDocumentDoesNotRequestFileUrl()
+        {
+            var loader = new TestDocumentLoader(request =>
+            {
+                var response = CreateResponse(request.Target.Href, "secret", HttpStatusCode.OK);
+                return new TestDownload(request.Target, Task.FromResult<IResponse>(response));
+            });
+
+            var xhr = await CreateRequesterAsync(loader, "https://origin.example.test/").ConfigureAwait(false);
+            var finished = new TaskCompletionSource<String>(TaskCreationOptions.RunContinuationsAsynchronously);
+            xhr.AddEventListener("load", (s, e) => finished.TrySetResult("load"));
+            xhr.AddEventListener("error", (s, e) => finished.TrySetResult("error"));
+            xhr.Open("GET", "file:///C:/secret.txt");
+            xhr.Send();
+
+            Assert.AreEqual("error", await finished.Task.ConfigureAwait(false));
+            Assert.IsNull(loader.LastRequest);
+            Assert.IsTrue(String.IsNullOrEmpty(xhr.ResponseText));
+        }
+
         private static async Task<XmlHttpRequest> CreateRequesterAsync(IDocumentLoader loader, String address)
         {
             var config = Configuration.Default

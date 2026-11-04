@@ -231,6 +231,42 @@ namespace AngleSharp.Io.Tests.Network
         }
 
         [Test]
+        public async Task FetchFromHttpDocumentDoesNotRequestFileUrl()
+        {
+            var loader = new TestDocumentLoader(request =>
+                new TestDownload(Task.FromResult<IResponse>(CreateResponse(request.Target.Href, "secret"))));
+
+            var window = await OpenWindowAsync(loader, "https://example.org/base/page").ConfigureAwait(false);
+
+            Assert.CatchAsync(() => window.Fetch("file:///C:/secret.txt"));
+            Assert.IsNull(loader.LastRequest);
+        }
+
+        [Test]
+        public async Task FetchFromHttpDocumentDoesNotGiveResponseRedirectedToFileUrl()
+        {
+            var loader = new TestDocumentLoader(request =>
+                new TestDownload(Task.FromResult<IResponse>(CreateResponse("file:///C:/secret.txt", "secret"))));
+
+            var window = await OpenWindowAsync(loader, "https://example.org/base/page").ConfigureAwait(false);
+
+            Assert.CatchAsync(() => window.Fetch("/redirect"));
+        }
+
+        [Test]
+        public async Task FetchFromFileDocumentRequestsFileUrl()
+        {
+            var loader = new TestDocumentLoader(request =>
+                new TestDownload(Task.FromResult<IResponse>(CreateResponse(request.Target.Href, "local"))));
+
+            var window = await OpenWindowAsync(loader, "file:///C:/pages/index.html").ConfigureAwait(false);
+            var response = await window.Fetch("data.txt").ConfigureAwait(false);
+
+            Assert.AreEqual("file:///C:/pages/data.txt", loader.LastRequest.Target.Href);
+            Assert.IsNotNull(response);
+        }
+
+        [Test]
         public void JsonWithDeeplyNestedArraysIsRejected()
         {
             var body = new String('[', 100000) + new String(']', 100000);

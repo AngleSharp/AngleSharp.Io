@@ -156,11 +156,25 @@ namespace AngleSharp.Io.Dom
                 throw new InvalidOperationException("No document loader service is registered.");
             }
 
-            var absoluteUrl = new Url(new Url(window.Document.Url), url);
+            var documentUrl = new Url(window.Document.Url);
+            var absoluteUrl = new Url(documentUrl, url);
+
+            if (!FileUrlPolicy.IsAllowed(documentUrl, absoluteUrl))
+            {
+                throw new InvalidOperationException("Failed to fetch.");
+            }
+
             var request = CreateRequest(window, absoluteUrl, options);
             var download = loader.FetchAsync(request);
+            var response = await download.Task.ConfigureAwait(false);
 
-            return await download.Task.ConfigureAwait(false);
+            if (response != null && !FileUrlPolicy.IsAllowed(documentUrl, response.Address))
+            {
+                response.Dispose();
+                throw new InvalidOperationException("Failed to fetch.");
+            }
+
+            return response;
         }
 
         /// <summary>

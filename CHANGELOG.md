@@ -4,6 +4,7 @@ Released on Wednesday, November 4 2026.
 
 - Improved `json()` with a nesting limit of 512 for deeply nested documents (#55) @michaelthyregod
 - Fixed the `ErrorEvent` of a `WebSocket` not telling the problem, so that its `Message` and `Error` were of no use
+- Fixed `fetch` and `XMLHttpRequest` reading `file:` URLs from documents that are not `file:` themselves (#53) @michaelthyregod
 - Fixed a cookie `Path` with control characters being accepted, which could add lines to the cookie file (#54) @michaelthyregod
 
 # 1.3.0
