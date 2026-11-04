@@ -10,6 +10,9 @@ namespace AngleSharp.Io.Network
     /// </summary>
     public static class ResponseExtensions
     {
+        private static readonly Char[] PathSeparators = new[] { '/', '\\' };
+        private static readonly Char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
+
         /// <summary>
         /// Saves the given response to the given file path.
         /// Disposes the response after saving has finished.
@@ -64,7 +67,7 @@ namespace AngleSharp.Io.Network
                 dispositionFileName = GetFileNameFromDisposition(disposition);
             }
 
-            var filename = dispositionFileName ?? response.Address.Path.Split('/').LastOrDefault() ?? "_";
+            var filename = ToFileName(dispositionFileName ?? response.Address.Path.Split('/').LastOrDefault());
             var standardExtension = Path.GetExtension(filename);
 
             if (String.IsNullOrEmpty(standardExtension))
@@ -76,6 +79,29 @@ namespace AngleSharp.Io.Network
 
 
             return filename;
+        }
+
+        private static String ToFileName(String value)
+        {
+            // the name comes from the server, so it must not reach outside the folder it is saved in
+            var name = value?.Substring(value.LastIndexOfAny(PathSeparators) + 1);
+
+            if (name == null || name == "." || name == "..")
+            {
+                return "_";
+            }
+
+            var chars = name.ToCharArray();
+
+            for (var i = 0; i < chars.Length; i++)
+            {
+                if (chars[i] == ':' || Array.IndexOf(InvalidFileNameChars, chars[i]) >= 0)
+                {
+                    chars[i] = '_';
+                }
+            }
+
+            return new String(chars);
         }
 
         private static String GetFileNameFromDisposition(String value)

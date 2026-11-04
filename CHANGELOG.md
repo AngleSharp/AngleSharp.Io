@@ -1,3 +1,7 @@
+# 1.3.1
+
+- Fixed `GetAttachedFileName` passing on folders from `Content-Disposition`; it now gives a plain file name @michaelthyregod
+
 # 1.3.0
 
 Released on Friday, November 6 2026.
