@@ -11,10 +11,14 @@ namespace AngleSharp.Io.Dom
     /// </summary>
     static class JsonReader
     {
+        // the reader recurses per nesting level, so deeper documents would overflow the stack;
+        // same default as the maximum depth of AngleSharp's HTML parser
+        private const Int32 MaxDepth = 512;
+
         public static Object Parse(String text)
         {
             var index = 0;
-            var value = ReadValue(text, ref index);
+            var value = ReadValue(text, ref index, 0);
             SkipWhitespace(text, ref index);
 
             if (index != text.Length)
@@ -25,7 +29,7 @@ namespace AngleSharp.Io.Dom
             return value;
         }
 
-        private static Object ReadValue(String text, ref Int32 index)
+        private static Object ReadValue(String text, ref Int32 index, Int32 depth)
         {
             SkipWhitespace(text, ref index);
 
@@ -36,10 +40,13 @@ namespace AngleSharp.Io.Dom
 
             switch (text[index])
             {
+                case '{' when depth < MaxDepth:
+                    return ReadObject(text, ref index, depth + 1);
+                case '[' when depth < MaxDepth:
+                    return ReadArray(text, ref index, depth + 1);
                 case '{':
-                    return ReadObject(text, ref index);
                 case '[':
-                    return ReadArray(text, ref index);
+                    throw Error(index);
                 case '"':
                     return ReadString(text, ref index);
                 case 't':
@@ -53,7 +60,7 @@ namespace AngleSharp.Io.Dom
             }
         }
 
-        private static Dictionary<String, Object> ReadObject(String text, ref Int32 index)
+        private static Dictionary<String, Object> ReadObject(String text, ref Int32 index, Int32 depth)
         {
             var result = new Dictionary<String, Object>();
             index++;
@@ -77,7 +84,7 @@ namespace AngleSharp.Io.Dom
                 var key = ReadString(text, ref index);
                 SkipWhitespace(text, ref index);
                 Expect(text, ref index, ':');
-                result[key] = ReadValue(text, ref index);
+                result[key] = ReadValue(text, ref index, depth);
                 SkipWhitespace(text, ref index);
 
                 if (index < text.Length && text[index] == ',')
@@ -91,7 +98,7 @@ namespace AngleSharp.Io.Dom
             }
         }
 
-        private static Object[] ReadArray(String text, ref Int32 index)
+        private static Object[] ReadArray(String text, ref Int32 index, Int32 depth)
         {
             var result = new List<Object>();
             index++;
@@ -105,7 +112,7 @@ namespace AngleSharp.Io.Dom
 
             while (true)
             {
-                result.Add(ReadValue(text, ref index));
+                result.Add(ReadValue(text, ref index, depth));
                 SkipWhitespace(text, ref index);
 
                 if (index < text.Length && text[index] == ',')
