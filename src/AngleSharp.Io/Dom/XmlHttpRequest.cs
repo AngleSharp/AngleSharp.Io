@@ -228,7 +228,13 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
 
             var loader = GetLoader();
 
-            if (loader != null)
+            if (!FileUrlPolicy.IsAllowed(new Url(_window.Document.Url), _url))
+            {
+                _headers.Clear();
+                ReadyState = RequesterState.Done;
+                Fire(ErrorEvent);
+            }
+            else if (loader != null)
             {
                 var request = new DocumentRequest(_url)
                 {
@@ -339,7 +345,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
 
             using (var response = await _download.Task.ConfigureAwait(false))
             {
-                if (response != null)
+                if (response != null && FileUrlPolicy.IsAllowed(new Url(_window.Document.Url), response.Address))
                 {
                     eventName = LoadEvent;
 
