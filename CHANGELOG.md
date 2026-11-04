@@ -1,3 +1,9 @@
+# 1.3.1
+
+Released on Wednesday, November 4 2026.
+
+- Fixed the `ErrorEvent` of a `WebSocket` not telling the problem, so that its `Message` and `Error` were of no use
+
 # 1.3.0
 
 Released on Monday, November 2 2026.
