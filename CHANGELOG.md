@@ -1,3 +1,7 @@
+# 1.3.1
+
+- Fixed a cookie `Expires` date with a day the month does not have failing the page load @michaelthyregod
+
 # 1.3.0
 
 Released on Friday, November 6 2026.
