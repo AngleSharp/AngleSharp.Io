@@ -44,7 +44,7 @@ namespace AngleSharp.Io.Dom
     [DomName("AbortSignal")]
     [DomExposed("Window")]
     [DomExposed("Worker")]
-    public sealed class AbortSignal : EventTarget
+    public sealed class AbortSignal : EventTarget, IAbortSignal
     {
         //  AngleSharp.Js throws this instead of the exception itself: an exception can't be
         //  just any value, while the reason of a signal can be.
