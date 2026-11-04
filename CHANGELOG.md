@@ -1,3 +1,7 @@
+# 1.3.1
+
+- Added trimming and Native AOT compatibility (`IsAotCompatible`) for the .NET 8 and .NET 10 targets @michaelthyregod
+
 # 1.3.0
 
 Released on Friday, November 6 2026.
