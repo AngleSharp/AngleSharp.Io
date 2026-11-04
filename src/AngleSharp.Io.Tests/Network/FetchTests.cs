@@ -230,6 +230,24 @@ namespace AngleSharp.Io.Tests.Network
             }
         }
 
+        [Test]
+        public void JsonWithDeeplyNestedArraysIsRejected()
+        {
+            var body = new String('[', 100000) + new String(']', 100000);
+            var response = new Response(CreateResponse("https://example.org/api", body));
+
+            Assert.ThrowsAsync<FormatException>(() => response.Json());
+        }
+
+        [Test]
+        public async Task JsonWithModeratelyNestedArraysIsRead()
+        {
+            var body = new String('[', 500) + new String(']', 500);
+            var response = new Response(CreateResponse("https://example.org/api", body));
+
+            Assert.IsInstanceOf<Object[]>(await response.Json().ConfigureAwait(false));
+        }
+
         private static async Task<IWindow> OpenWindowAsync(IDocumentLoader loader, String address)
         {
             var config = Configuration.Default.WithOnly<IDocumentLoader>(_ => loader);
