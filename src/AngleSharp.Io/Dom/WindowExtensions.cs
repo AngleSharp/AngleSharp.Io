@@ -129,6 +129,19 @@ namespace AngleSharp.Io.Dom
             return Fetch(window, url, null);
         }
 
+        private static async Task<IResponse> GetResponseAsync(IDownload download, Url documentUrl)
+        {
+            var response = await download.Task.ConfigureAwait(false);
+
+            if (response != null && !FileUrlPolicy.IsAllowed(documentUrl, response.Address))
+            {
+                response.Dispose();
+                throw new InvalidOperationException("Failed to fetch.");
+            }
+
+            return response;
+        }
+
         /// <summary>
         /// Performs a request using the configured document loader.
         /// </summary>
@@ -158,23 +171,43 @@ namespace AngleSharp.Io.Dom
 
             var documentUrl = new Url(window.Document.Url);
             var absoluteUrl = new Url(documentUrl, url);
+            var signal = options?.Signal;
 
             if (!FileUrlPolicy.IsAllowed(documentUrl, absoluteUrl))
             {
                 throw new InvalidOperationException("Failed to fetch.");
             }
 
+            signal?.ThrowIfAborted();
+
             var request = CreateRequest(window, absoluteUrl, options);
             var download = loader.FetchAsync(request);
-            var response = await download.Task.ConfigureAwait(false);
-
-            if (response != null && !FileUrlPolicy.IsAllowed(documentUrl, response.Address))
+            var downloadTask = GetResponseAsync(download, documentUrl);
+            
+            if (signal is null)
             {
-                response.Dispose();
-                throw new InvalidOperationException("Failed to fetch.");
+                return await downloadTask.ConfigureAwait(false);
             }
 
-            return response;
+            var aborted = new TaskCompletionSource<IResponse>();
+
+            Action abort = () =>
+            {
+                download.Cancel();
+                aborted.TrySetException(signal.CreateException());
+            };
+
+            signal.OnAbort(abort);
+
+            try
+            {
+                var first = await Task.WhenAny(downloadTask, aborted.Task).ConfigureAwait(false);
+                return await first.ConfigureAwait(false);
+            }
+            finally
+            {
+                signal.RemoveOnAbort(abort);
+            }
         }
 
         /// <summary>
@@ -288,5 +321,11 @@ namespace AngleSharp.Io.Dom
         /// </summary>
         [DomName("mimeType")]
         public String MimeType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the signal that aborts the request.
+        /// </summary>
+        [DomName("signal")]
+        public AbortSignal Signal { get; set; }
     }
 }

@@ -1,17 +1,13 @@
-# 1.3.1
+# 1.3.0
 
 Released on Wednesday, November 4 2026.
 
+- Updated `RtcIceServer.Urls` to `RtcIceServerUrls`, as `urls` takes a single URL or several
 - Improved `json()` with a nesting limit of 512 for deeply nested documents (#55) @michaelthyregod
 - Fixed the `ErrorEvent` of a `WebSocket` not telling the problem, so that its `Message` and `Error` were of no use
 - Fixed `fetch` and `XMLHttpRequest` reading `file:` URLs from documents that are not `file:` themselves (#53) @michaelthyregod
 - Fixed a cookie `Path` with control characters being accepted, which could add lines to the cookie file (#54) @michaelthyregod
-
-# 1.3.0
-
-Released on Monday, November 2 2026.
-
-- Updated `RtcIceServer.Urls` to `RtcIceServerUrls`, as `urls` takes a single URL or several
+- Added `AbortController` and `AbortSignal`, also taken by `fetch` as its `signal`
 - Added `Notification` with `requestPermission` and an injected delivery platform (#41)
 - Added `showOpenFilePicker` and `showSaveFilePicker` with writable file handles (#42)
 - Added `sync` and `periodicSync` on service worker registrations with an injected scheduler (#44)
