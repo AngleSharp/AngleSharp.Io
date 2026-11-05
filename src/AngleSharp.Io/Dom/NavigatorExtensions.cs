@@ -2,8 +2,10 @@ namespace AngleSharp.Io.Dom
 {
     using AngleSharp.Browser.Dom;
     using AngleSharp.Attributes;
+    using AngleSharp.Dom;
     using System;
     using System.Runtime.CompilerServices;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Defines a set of extensions for the navigator object.
@@ -11,6 +13,7 @@ namespace AngleSharp.Io.Dom
     [DomExposed("Navigator")]
     public static class NavigatorExtensions
     {
+        private static readonly ConditionalWeakTable<INavigator, Clipboard> DeniedClipboards = new ConditionalWeakTable<INavigator, Clipboard>();
         private static readonly ConditionalWeakTable<INavigator, Permissions> PermissionsByNavigator = new ConditionalWeakTable<INavigator, Permissions>();
 
         /// <summary>
@@ -54,16 +57,51 @@ namespace AngleSharp.Io.Dom
         }
 
         /// <summary>
+        /// Gets if cookies can be used.
+        /// </summary>
+        [DomName("cookieEnabled")]
+        [DomAccessor(Accessors.Getter)]
+        public static Boolean CookieEnabled(this INavigator navigator) => true;
+
+        /// <summary>
+        /// Gets the number of logical processors.
+        /// </summary>
+        [DomName("hardwareConcurrency")]
+        [DomAccessor(Accessors.Getter)]
+        public static Int32 HardwareConcurrency(this INavigator navigator) => Environment.ProcessorCount;
+
+        /// <summary>
+        /// Gets the number of touch points the device has, which is none here.
+        /// </summary>
+        [DomName("maxTouchPoints")]
+        [DomAccessor(Accessors.Getter)]
+        public static Int32 MaxTouchPoints(this INavigator navigator) => 0;
+
+        /// <summary>
+        /// Gets if the browser is automated, which only a host can tell.
+        /// </summary>
+        [DomName("webdriver")]
+        [DomAccessor(Accessors.Getter)]
+        public static Boolean Webdriver(this INavigator navigator) => false;
+
+        /// <summary>
         /// Gets the clipboard object.
         /// </summary>
-        [DomName("clipboard")]
-        [DomAccessor(Accessors.Getter)]
         public static Clipboard Clipboard(this INavigator navigator)
         {
             var context = GetContext(navigator);
             var factory = context?.GetService<IClipboardProviderFactory>();
             return factory?.GetClipboard(navigator);
         }
+
+        /// <summary>
+        /// Gets the clipboard object as script sees it: pages test for its members without
+        /// expecting it to be null, so without a platform it is one denying all access.
+        /// </summary>
+        [DomName("clipboard")]
+        [DomAccessor(Accessors.Getter)]
+        public static Clipboard ClipboardOrDenied(this INavigator navigator) =>
+            navigator.Clipboard() ?? DeniedClipboards.GetValue(navigator, _ => new Clipboard(new DeniedClipboardPlatform()));
 
         /// <summary>
         /// Gets the geolocation object.
@@ -159,5 +197,12 @@ namespace AngleSharp.Io.Dom
         {
             return (navigator as Navigator)?.Context;
         }
+    }
+
+    sealed class DeniedClipboardPlatform : IClipboardPlatform
+    {
+        public Task<String> ReadTextAsync() => throw new DomException(Permissions.NotAllowedError);
+
+        public Task WriteTextAsync(String text) => throw new DomException(Permissions.NotAllowedError);
     }
 }

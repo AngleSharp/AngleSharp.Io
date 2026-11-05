@@ -105,6 +105,40 @@ namespace AngleSharp.Io.Dom
         public void Delete(String name) => _entries.RemoveAll(entry => entry.Key == name);
 
         /// <summary>
+        /// Gets the pairs of a name and a value.
+        /// </summary>
+        /// <returns>The pairs in their order.</returns>
+        [DomName("entries")]
+        public String[][] Entries() => _entries.Select(entry => new[] { entry.Key, entry.Value }).ToArray();
+
+        /// <summary>
+        /// Gets the names of the entries.
+        /// </summary>
+        /// <returns>The names in their order.</returns>
+        [DomName("keys")]
+        public String[] Keys() => _entries.Select(entry => entry.Key).ToArray();
+
+        /// <summary>
+        /// Gets the values of the entries.
+        /// </summary>
+        /// <returns>The values in their order.</returns>
+        [DomName("values")]
+        public String[] Values() => _entries.Select(entry => entry.Value).ToArray();
+
+        /// <summary>
+        /// Calls the given function with the value and name of each entry.
+        /// </summary>
+        /// <param name="callback">The function to call.</param>
+        [DomName("forEach")]
+        public void ForEach(Action<String, String, FormData> callback)
+        {
+            foreach (var entry in _entries.ToArray())
+            {
+                callback(entry.Value, entry.Key, this);
+            }
+        }
+
+        /// <summary>
         /// Creates the data set to send for the entries.
         /// </summary>
         /// <returns>The data set with all entries.</returns>

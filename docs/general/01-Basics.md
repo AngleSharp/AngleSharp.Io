@@ -277,6 +277,8 @@ AngleSharp.Io exposes an in-memory IndexedDB surface that is shared per origin:
 - transaction lifecycle state/events (`IsCompleted`, `IsAborted`, `Completed`, `Aborted`)
 - single active read-write transaction per database
 
+Scripts get the IndexedDB of the standard as `indexedDB`: requests finish later and tell so by events, transactions commit by themselves, and values are structured clones (so AngleSharp.Js is needed for objects). Its databases are kept in memory, shared by the windows of a profile and separate from the API shown below, which is for .NET code and keeps strings. Use an event loop (`WithEventLoop()`), as otherwise nothing tells when a task of a script ended, which is when a transaction stops taking requests.
+
 Register IndexedDB by providing a provider factory:
 
 ```cs

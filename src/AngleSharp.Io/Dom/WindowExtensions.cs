@@ -44,13 +44,19 @@ namespace AngleSharp.Io.Dom
         /// <summary>
         /// Gets the indexedDB object.
         /// </summary>
-        [DomName("indexedDB")]
-        [DomAccessor(Accessors.Getter)]
         public static IIndexedDbFactory IndexedDb(this IWindow window)
         {
             var factory = window?.Document?.Context?.GetService<IIndexedDbProviderFactory>();
             return factory?.GetIndexedDb(window);
         }
+
+        /// <summary>
+        /// Gets the IndexedDB of script, which works with requests and events as in the standard.
+        /// Its databases are not the ones of <see cref="IndexedDb"/>.
+        /// </summary>
+        [DomName("indexedDB")]
+        [DomAccessor(Accessors.Getter)]
+        public static IdbFactory IndexedDbOfScript(this IWindow window) => IdbFactory.For(window);
 
         /// <summary>
         /// Gets the caches object.
@@ -193,8 +199,8 @@ namespace AngleSharp.Io.Dom
 
             Action abort = () =>
             {
-                download.Cancel();
                 aborted.TrySetException(signal.CreateException());
+                download.Cancel();
             };
 
             signal.OnAbort(abort);
@@ -203,6 +209,11 @@ namespace AngleSharp.Io.Dom
             {
                 var first = await Task.WhenAny(downloadTask, aborted.Task).ConfigureAwait(false);
                 return await first.ConfigureAwait(false);
+            }
+            catch (Exception) when (signal.IsAborted)
+            {
+                // cancelling the download is a failure of its own, but the abort is what happened
+                throw signal.CreateException();
             }
             finally
             {
@@ -218,13 +229,35 @@ namespace AngleSharp.Io.Dom
         /// <param name="url">The request URL.</param>
         /// <param name="options">The optional request options.</param>
         /// <returns>The fetched response.</returns>
+        public static Task<Response> FetchAsync(this IWindow window, String url, FetchOptions options = null) =>
+            FetchResponseAsync(window, url, options);
+
+        /// <summary>
+        /// Performs a request like the fetch API (<c>window.fetch</c>), i.e., giving a response
+        /// whose body can be read as text or JSON.
+        /// </summary>
+        /// <param name="window">The originating window.</param>
+        /// <param name="input">The request or its address, e.g. a string or an URL.</param>
+        /// <param name="options">The optional request options.</param>
+        /// <returns>The fetched response.</returns>
         [DomName("fetch")]
-        public static async Task<Response> FetchAsync(this IWindow window, String url, FetchOptions options = null)
+        public static Task<Response> FetchAsync(this IWindow window, Object input, FetchOptions options = null)
+        {
+            if (input is FetchRequest)
+            {
+                var request = new FetchRequest(window, input, options);
+                return FetchResponseAsync(window, request.Url, request.ToOptions());
+            }
+
+            return FetchResponseAsync(window, input?.ToString(), options);
+        }
+
+        private static async Task<Response> FetchResponseAsync(IWindow window, String url, FetchOptions options)
         {
             var response = await Fetch(window, url, options).ConfigureAwait(false);
             var target = new Url(new Url(window.Document.Url), url);
             var isRedirected = response.Address != null && !response.Address.Equals(target);
-            return new Response(response, isRedirected);
+            return new Response(response, isRedirected, options?.Signal);
         }
 
         private static DocumentRequest CreateRequest(IWindow window, Url url, FetchOptions options)
@@ -241,7 +274,7 @@ namespace AngleSharp.Io.Dom
 
             if (requestOptions.Headers != null)
             {
-                foreach (var pair in requestOptions.Headers)
+                foreach (var pair in requestOptions.Headers.Pairs)
                 {
                     request.Headers[pair.Key] = pair.Value;
                 }
@@ -308,7 +341,7 @@ namespace AngleSharp.Io.Dom
         /// Gets or sets custom request headers.
         /// </summary>
         [DomName("headers")]
-        public Dictionary<String, String> Headers { get; set; }
+        public Headers Headers { get; set; }
 
         /// <summary>
         /// Gets or sets the request body.
@@ -327,5 +360,53 @@ namespace AngleSharp.Io.Dom
         /// </summary>
         [DomName("signal")]
         public AbortSignal Signal { get; set; }
+
+        /// <summary>
+        /// Gets or sets the mode, which is only kept by a <see cref="FetchRequest"/>.
+        /// </summary>
+        [DomName("mode")]
+        public String Mode { get; set; }
+
+        /// <summary>
+        /// Gets or sets when credentials are sent, which is only kept by a <see cref="FetchRequest"/>.
+        /// </summary>
+        [DomName("credentials")]
+        public String Credentials { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cache mode, which is only kept by a <see cref="FetchRequest"/>.
+        /// </summary>
+        [DomName("cache")]
+        public String Cache { get; set; }
+
+        /// <summary>
+        /// Gets or sets how redirects are handled, which is only kept by a <see cref="FetchRequest"/>.
+        /// </summary>
+        [DomName("redirect")]
+        public String Redirect { get; set; }
+
+        /// <summary>
+        /// Gets or sets the referrer, which is only kept by a <see cref="FetchRequest"/>.
+        /// </summary>
+        [DomName("referrer")]
+        public String Referrer { get; set; }
+
+        /// <summary>
+        /// Gets or sets the referrer policy, which is only kept by a <see cref="FetchRequest"/>.
+        /// </summary>
+        [DomName("referrerPolicy")]
+        public String ReferrerPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the expected hash, which is only kept by a <see cref="FetchRequest"/>.
+        /// </summary>
+        [DomName("integrity")]
+        public String Integrity { get; set; }
+
+        /// <summary>
+        /// Gets or sets if the request may outlive the page, which is only kept by a <see cref="FetchRequest"/>.
+        /// </summary>
+        [DomName("keepalive")]
+        public Boolean? KeepAlive { get; set; }
     }
 }

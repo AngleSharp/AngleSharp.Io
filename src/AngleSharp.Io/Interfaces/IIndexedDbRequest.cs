@@ -1,6 +1,5 @@
 namespace AngleSharp.Io.Dom
 {
-    using AngleSharp.Attributes;
     using System;
     using System.Threading.Tasks;
 
@@ -8,38 +7,31 @@ namespace AngleSharp.Io.Dom
     /// Represents a lightweight request wrapper for IndexedDB operations.
     /// </summary>
     /// <typeparam name="T">The result type.</typeparam>
-    [DomName("IDBRequest")]
-    [DomExposed("Window")]
     public interface IIndexedDbRequest<T>
     {
         /// <summary>
         /// Gets the current request state.
         /// </summary>
-        [DomName("state")]
         IndexedDbRequestState State { get; }
 
         /// <summary>
         /// Gets whether the request has completed.
         /// </summary>
-        [DomName("done")]
         Boolean IsCompleted { get; }
 
         /// <summary>
         /// Gets whether the request failed.
         /// </summary>
-        [DomName("error")]
         Boolean HasError { get; }
 
         /// <summary>
         /// Gets the result value if successful.
         /// </summary>
-        [DomName("result")]
         T Result { get; }
 
         /// <summary>
         /// Gets the request error if any.
         /// </summary>
-        [DomName("exception")]
         Exception Exception { get; }
 
         /// <summary>

@@ -6,8 +6,15 @@ Released on Wednesday, November 4 2026.
 - Improved `json()` with a nesting limit of 512 for deeply nested documents (#55) @michaelthyregod
 - Fixed the `ErrorEvent` of a `WebSocket` not telling the problem, so that its `Message` and `Error` were of no use
 - Fixed `fetch` and `XMLHttpRequest` reading `file:` URLs from documents that are not `file:` themselves (#53) @michaelthyregod
+- Fixed `navigator.clipboard` being null for script without a platform, when pages test for its members; it denies access now
 - Fixed a cookie `Path` with control characters being accepted, which could add lines to the cookie file (#54) @michaelthyregod
-- Added `AbortController` and `AbortSignal`, also taken by `fetch` as its `signal`
+- Added `Request`, also taken by `fetch`, the constructors of `Headers` and `Response` and the members of `Headers` changing it
+- Added `entries`, `keys`, `values` and `forEach` to `Headers` and `FormData`
+- Added `clone` to `Response`
+- Added the options of `navigator.locks.request`, which are the `mode`, `ifAvailable`, `steal` and `signal`
+- Added the IndexedDB of the standard for scripts (requests with events, transactions, structured values, keys of all kinds, key ranges, indexes and cursors), as `indexedDB` was a synchronous API for strings that the usual ways of using it never got an event from; the API for .NET code remains, without the names for scripts
+- Added `cookieEnabled`, `hardwareConcurrency`, `maxTouchPoints` and `webdriver` to `navigator`
+- Added `AbortController` and `AbortSignal`, also taken by `fetch` as its `signal`, which stops a download and rejects reading the body afterwards
 - Added `Notification` with `requestPermission` and an injected delivery platform (#41)
 - Added `showOpenFilePicker` and `showSaveFilePicker` with writable file handles (#42)
 - Added `sync` and `periodicSync` on service worker registrations with an injected scheduler (#44)
