@@ -5,7 +5,6 @@ using AngleSharp.Browser;
 using AngleSharp.Dom;
 using AngleSharp.Dom.Events;
 using AngleSharp.Html;
-using AngleSharp.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -502,13 +501,13 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         {
             var charset = new MimeType(contentType).GetParameter("charset");
 
-            if (!String.IsNullOrEmpty(charset) && TextEncoding.IsSupported(charset))
+            if (!String.IsNullOrEmpty(charset) && EncodingSupport.IsSupported(charset))
             {
-                return TextEncoding.Resolve(charset);
+                return EncodingSupport.Resolve(charset);
             }
         }
 
-        return TextEncoding.Utf8;
+        return EncodingSupport.Utf8;
     }
 
     private Stream CreateUploadStream(Stream content)

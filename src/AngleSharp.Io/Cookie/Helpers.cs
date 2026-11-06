@@ -150,12 +150,12 @@ namespace AngleSharp.Io.Cookie
         public static String DecodeURIComponent(String component)
         {
             var content = component.UrlDecode();
-            return TextEncoding.Utf8.GetString(content);
+            return EncodingSupport.Utf8.GetString(content);
         }
 
         public static String EncodeURIComponent(String component)
         {
-            var content = TextEncoding.Utf8.GetBytes(component);
+            var content = EncodingSupport.Utf8.GetBytes(component);
             return content.UrlEncode();
         }
 

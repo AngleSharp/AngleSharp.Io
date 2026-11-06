@@ -115,6 +115,11 @@ public class TransformStream
 
     internal void Enqueue(Object chunk)
     {
+        //  the gate closes before the chunk goes out: a read it fulfills can
+        //  pull (and open the gate) on another thread right away, which a
+        //  close afterwards would undo, leaving the next write waiting forever
+        CloseGate();
+
         try
         {
             Readable.EnqueueInternal(chunk);
@@ -122,12 +127,13 @@ public class TransformStream
         catch (Exception error)
         {
             Writable.ErrorInternal(StreamErrors.ToReason(error));
+            OpenGate();
             throw;
         }
 
-        if (Readable.GetDesiredSize() <= 0)
+        if (!(Readable.GetDesiredSize() <= 0))
         {
-            CloseGate();
+            OpenGate();
         }
     }
 

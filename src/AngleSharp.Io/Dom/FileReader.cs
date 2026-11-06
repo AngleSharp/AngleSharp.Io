@@ -3,7 +3,6 @@ namespace AngleSharp.Io.Dom;
 using AngleSharp.Attributes;
 using AngleSharp.Browser;
 using AngleSharp.Dom;
-using AngleSharp.Text;
 using System;
 using System.IO;
 using System.Text;
@@ -289,10 +288,12 @@ public sealed class FileReader : EventTarget
 
                 if (generation == _generation)
                 {
-                    _result = result;
-                    _readyState = FileReaderState.Done;
                     Fire(ProgressEvent, loaded, total, generation);
-                    Fire(LoadEvent, loaded, total, generation);
+                    Fire(LoadEvent, loaded, total, generation, () =>
+                    {
+                        _result = result;
+                        _readyState = FileReaderState.Done;
+                    });
                     Fire(LoadEndEvent, loaded, total, generation);
                 }
             }
@@ -301,10 +302,12 @@ public sealed class FileReader : EventTarget
         {
             if (generation == _generation)
             {
-                _error = error as IDomException ?? new DomException(error.Message);
-                _result = null;
-                _readyState = FileReaderState.Done;
-                Fire(ErrorEvent, loaded, total, generation);
+                Fire(ErrorEvent, loaded, total, generation, () =>
+                {
+                    _error = error as IDomException ?? new DomException(error.Message);
+                    _result = null;
+                    _readyState = FileReaderState.Done;
+                });
                 Fire(LoadEndEvent, loaded, total, generation);
             }
         }
@@ -312,19 +315,19 @@ public sealed class FileReader : EventTarget
 
     private static String DecodeText(Byte[] bytes, String label, String blobType)
     {
-        var encoding = TextEncoding.Utf8;
+        var encoding = EncodingSupport.Utf8;
 
-        if (!String.IsNullOrEmpty(label) && TextEncoding.IsSupported(label))
+        if (!String.IsNullOrEmpty(label) && EncodingSupport.IsSupported(label))
         {
-            encoding = TextEncoding.Resolve(label);
+            encoding = EncodingSupport.Resolve(label);
         }
         else if (!String.IsNullOrEmpty(blobType))
         {
             var charset = new MimeType(blobType).GetParameter("charset");
 
-            if (!String.IsNullOrEmpty(charset) && TextEncoding.IsSupported(charset))
+            if (!String.IsNullOrEmpty(charset) && EncodingSupport.IsSupported(charset))
             {
-                encoding = TextEncoding.Resolve(charset);
+                encoding = EncodingSupport.Resolve(charset);
             }
         }
 
@@ -335,13 +338,20 @@ public sealed class FileReader : EventTarget
         }
     }
 
-    private void Fire(String eventName, Int64 loaded, Int64 total, Int32? generation = null)
+    private void Fire(String eventName, Int64 loaded, Int64 total, Int32? generation = null, Action settle = null)
     {
         var loop = _window?.Document?.Context.GetService<IEventLoop>();
         var expected = generation ?? _generation;
 
         void Dispatch()
         {
+            //  the outcome is only settled in the task firing its event, as the read runs on
+            //  another thread and could otherwise be seen right after the call starting it
+            if (expected == _generation)
+            {
+                settle?.Invoke();
+            }
+
             if (expected == _generation || eventName == AbortEvent || eventName == LoadEndEvent)
             {
                 base.Dispatch(new ProgressEvent(eventName, lengthComputable: total > 0, loaded: loaded, total: total));

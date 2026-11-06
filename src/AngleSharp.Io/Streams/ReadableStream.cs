@@ -178,6 +178,7 @@ public class ReadableStream
         var canceled = new Boolean[2];
         var reasons = new Object[2];
         var reading = false;
+        var readAgain = false;
         var cancelSource = new TaskCompletionSource<Object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         Task Pull(ReadableStreamDefaultController _)
@@ -186,8 +187,16 @@ public class ReadableStream
             {
                 //  the first pull can come while the second branch is still being created;
                 //  the next read repeats it, so it is safe to skip
-                if (reading || branches[1] == null)
+                if (branches[1] == null)
                 {
+                    return Task.CompletedTask;
+                }
+
+                //  a branch's pull counts as done once this returns, so one coming in during
+                //  a read must be repeated afterwards or that branch would wait forever
+                if (reading)
+                {
+                    readAgain = true;
                     return Task.CompletedTask;
                 }
 
@@ -196,40 +205,63 @@ public class ReadableStream
 
             reader.Read().ContinueWith(completed =>
             {
+                Distribute(completed);
+                Boolean again;
+
+                //  only now may the next read start; otherwise its result (e.g., the end
+                //  closing the branches) could overtake the chunk being handed out
                 lock (branches)
                 {
                     reading = false;
+                    again = readAgain && !completed.IsFaulted && !completed.Result.Done;
+                    readAgain = false;
                 }
 
-                if (completed.IsFaulted)
+                if (again)
                 {
-                    var reason = StreamErrors.ToReason(completed.Exception);
-                    branches[0].ErrorInternal(reason);
-                    branches[1].ErrorInternal(reason);
-                }
-                else if (completed.Result.Done)
-                {
-                    for (var i = 0; i < 2; i++)
-                    {
-                        if (!canceled[i])
-                        {
-                            branches[i].CloseInternal();
-                        }
-                    }
-                }
-                else
-                {
-                    for (var i = 0; i < 2; i++)
-                    {
-                        if (!canceled[i])
-                        {
-                            branches[i].EnqueueInternal(completed.Result.Value);
-                        }
-                    }
+                    Pull(null);
                 }
             }, TaskScheduler.Default);
 
             return Task.CompletedTask;
+        }
+
+        void Distribute(Task<ReadableStreamReadResult> completed)
+        {
+            if (completed.IsFaulted)
+            {
+                var reason = StreamErrors.ToReason(completed.Exception);
+                branches[0].ErrorInternal(reason);
+                branches[1].ErrorInternal(reason);
+            }
+            else if (completed.Result.Done)
+            {
+                for (var i = 0; i < 2; i++)
+                {
+                    if (!canceled[i])
+                    {
+                        branches[i].CloseInternal();
+                    }
+                }
+            }
+            else
+            {
+                for (var i = 0; i < 2; i++)
+                {
+                    if (!canceled[i])
+                    {
+                        try
+                        {
+                            branches[i].EnqueueInternal(completed.Result.Value);
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            //  the branch was closed or errored in the meantime, which
+                            //  must not keep the chunk from the other one
+                        }
+                    }
+                }
+            }
         }
 
         Task CancelBranch(Int32 index, Object reason)

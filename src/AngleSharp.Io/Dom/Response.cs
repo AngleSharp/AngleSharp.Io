@@ -1,7 +1,6 @@
 namespace AngleSharp.Io.Dom
 {
     using AngleSharp.Attributes;
-    using AngleSharp.Text;
     using System;
     using System.IO;
     using System.Net;
@@ -322,13 +321,13 @@ namespace AngleSharp.Io.Dom
             {
                 var charset = new MimeType(contentType).GetParameter("charset");
 
-                if (!String.IsNullOrEmpty(charset) && TextEncoding.IsSupported(charset))
+                if (!String.IsNullOrEmpty(charset) && EncodingSupport.IsSupported(charset))
                 {
-                    return TextEncoding.Resolve(charset);
+                    return EncodingSupport.Resolve(charset);
                 }
             }
 
-            return TextEncoding.Utf8;
+            return EncodingSupport.Utf8;
         }
 
         private static String GetStatusText(HttpStatusCode status)

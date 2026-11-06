@@ -1,7 +1,6 @@
 namespace AngleSharp.Io.Dom;
 
 using AngleSharp.Attributes;
-using AngleSharp.Text;
 using System;
 using System.Text;
 using System.Threading.Tasks;
@@ -34,12 +33,12 @@ public sealed class TextDecoderStream
     [DomConstructor]
     public TextDecoderStream(String label = "utf-8", TextDecoderOptions options = null)
     {
-        if (!TextEncoding.IsSupported(label ?? String.Empty))
+        if (!EncodingSupport.IsSupported(label ?? String.Empty))
         {
             throw new NotSupportedException($"The encoding '{label}' is not supported.");
         }
 
-        var encoding = (Encoding)TextEncoding.Resolve(label).Clone();
+        var encoding = (Encoding)EncodingSupport.Resolve(label).Clone();
         encoding.DecoderFallback = options?.Fatal == true
             ? DecoderFallback.ExceptionFallback
             : new DecoderReplacementFallback("\ufffd");
