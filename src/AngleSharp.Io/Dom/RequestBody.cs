@@ -42,6 +42,8 @@ namespace AngleSharp.Io.Dom
                     var query = searchParams.ToString();
                     var queryBytes = Encoding.UTF8.GetBytes(query);
                     return new SerializedBody(new MemoryStream(queryBytes), "application/x-www-form-urlencoded; charset=UTF-8");
+                case ReadableStream readableStream:
+                    return new SerializedBody(new ReadableStreamContentStream(readableStream));
                 case IBlob blob:
                     var blobBody = blob.Body;
 

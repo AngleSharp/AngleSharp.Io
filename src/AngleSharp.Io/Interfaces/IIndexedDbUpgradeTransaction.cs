@@ -1,25 +1,20 @@
 namespace AngleSharp.Io.Dom
 {
-    using AngleSharp.Attributes;
     using System;
 
     /// <summary>
     /// Represents the version-change transaction passed during upgrades.
     /// </summary>
-    [DomName("IDBVersionChangeTransaction")]
-    [DomExposed("Window")]
     public interface IIndexedDbUpgradeTransaction
     {
         /// <summary>
         /// Gets the old database version.
         /// </summary>
-        [DomName("oldVersion")]
         Int64 OldVersion { get; }
 
         /// <summary>
         /// Gets the new database version.
         /// </summary>
-        [DomName("newVersion")]
         Int64 NewVersion { get; }
 
         /// <summary>
@@ -27,7 +22,6 @@ namespace AngleSharp.Io.Dom
         /// </summary>
         /// <param name="name">The object store name.</param>
         /// <returns>The object store.</returns>
-        [DomName("createObjectStore")]
         IIndexedDbObjectStore CreateObjectStore(String name);
 
         /// <summary>
@@ -35,7 +29,6 @@ namespace AngleSharp.Io.Dom
         /// </summary>
         /// <param name="name">The object store name.</param>
         /// <returns>True if the store existed and was removed.</returns>
-        [DomName("deleteObjectStore")]
         Boolean DeleteObjectStore(String name);
 
         /// <summary>
@@ -43,7 +36,6 @@ namespace AngleSharp.Io.Dom
         /// </summary>
         /// <param name="name">The object store name.</param>
         /// <returns>The object store.</returns>
-        [DomName("objectStore")]
         IIndexedDbObjectStore GetObjectStore(String name);
     }
 }

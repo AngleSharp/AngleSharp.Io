@@ -326,6 +326,7 @@ namespace AngleSharp.Io.Dom
         private void OnError(Exception ex)
         {
             var evt = new ErrorEvent();
+            evt.Init(null, 0, 0, ex);
             evt.Init(EventNames.Error, false, false);
             Dispatch(evt);
         }

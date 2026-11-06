@@ -716,6 +716,33 @@ namespace AngleSharp.Io.Tests.WebRtc
         }
 
         [Test]
+        public void IceServerUrlsTakeASingleUrlOrSeveral()
+        {
+            var platform = new LoopbackRtcPlatform();
+            var configuration = new RtcConfiguration
+            {
+                IceServers = new[]
+                {
+                    new RtcIceServer { Urls = "stun:one.example" },
+                    new RtcIceServer { Urls = new[] { "stun:two.example", "stun:three.example" } },
+                },
+            };
+
+            using (var connection = new RtcPeerConnection(platform, configuration))
+            {
+                var servers = connection.GetConfiguration().IceServers;
+                String[] urls = servers[1].Urls;
+
+                CollectionAssert.AreEqual(new[] { "stun:one.example" }, servers[0].Urls.Values);
+                CollectionAssert.AreEqual(new[] { "stun:two.example", "stun:three.example" }, urls);
+            }
+
+            Assert.Throws<DomException>(() => new RtcPeerConnection(platform, new RtcConfiguration { IceServers = new[] { new RtcIceServer { Urls = "not a url" } } }));
+            Assert.Throws<DomException>(() => new RtcPeerConnection(platform, new RtcConfiguration { IceServers = new[] { new RtcIceServer { Urls = (String)null } } }));
+            Assert.Throws<DomException>(() => new RtcPeerConnection(platform, new RtcConfiguration { IceServers = new[] { new RtcIceServer { Urls = (RtcIceServerUrls)null } } }));
+        }
+
+        [Test]
         public void ConfigurationIsValidated()
         {
             var platform = new LoopbackRtcPlatform();

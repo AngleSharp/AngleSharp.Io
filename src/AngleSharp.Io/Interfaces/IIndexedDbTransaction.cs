@@ -1,31 +1,25 @@
 namespace AngleSharp.Io.Dom
 {
-    using AngleSharp.Attributes;
     using System;
 
     /// <summary>
     /// Represents a transaction scope for IndexedDB operations.
     /// </summary>
-    [DomName("IDBTransaction")]
-    [DomExposed("Window")]
     public interface IIndexedDbTransaction : IDisposable
     {
         /// <summary>
         /// Gets the transaction mode.
         /// </summary>
-        [DomName("mode")]
         IndexedDbTransactionMode Mode { get; }
 
         /// <summary>
         /// Gets if the transaction has completed.
         /// </summary>
-        [DomName("done")]
         Boolean IsCompleted { get; }
 
         /// <summary>
         /// Gets if the transaction has been aborted.
         /// </summary>
-        [DomName("aborted")]
         Boolean IsAborted { get; }
 
         /// <summary>
@@ -33,19 +27,16 @@ namespace AngleSharp.Io.Dom
         /// </summary>
         /// <param name="name">The object store name.</param>
         /// <returns>The object store.</returns>
-        [DomName("objectStore")]
         IIndexedDbObjectStore GetObjectStore(String name);
 
         /// <summary>
         /// Commits the transaction.
         /// </summary>
-        [DomName("commit")]
         void Commit();
 
         /// <summary>
         /// Aborts the transaction.
         /// </summary>
-        [DomName("abort")]
         void Abort();
 
         /// <summary>

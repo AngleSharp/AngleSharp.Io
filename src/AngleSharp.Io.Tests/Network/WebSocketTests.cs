@@ -12,6 +12,31 @@
     public class WebSocketTests
     {
         [Test]
+        public async Task FailingConnectionFiresAnErrorEventWithTheProblem()
+        {
+            // ARRANGE
+            var document = await BrowsingContext.New().OpenNewAsync("https://example.com/");
+            var error = new TaskCompletionSource<ErrorEvent>();
+
+            // ACT: nothing listens on the port, as it was just free
+            var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+            listener.Start();
+            var port = ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+            listener.Stop();
+            var ws = new WebSocket(document.DefaultView, $"ws://127.0.0.1:{port}/");
+            ws.Error += (s, ev) => error.TrySetResult(ev as ErrorEvent);
+            var finished = await Task.WhenAny(error.Task, Task.Delay(TimeSpan.FromSeconds(30)));
+
+            // ASSERT
+            finished.Should().BeSameAs(error.Task);
+            var received = await error.Task;
+            received.Should().NotBeNull();
+            received.Type.Should().Be("error");
+            received.Error.Should().NotBeNull();
+            received.Message.Should().NotBeNullOrEmpty();
+        }
+
+        [Test]
         public async Task ConnectToWebSocketEcho()
         {
             if (Helper.IsNetworkAvailable())

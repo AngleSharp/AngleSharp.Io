@@ -1,7 +1,6 @@
 namespace AngleSharp.Io.Dom
 {
     using AngleSharp.Attributes;
-    using AngleSharp.Text;
     using System;
     using System.IO;
     using System.Net;
@@ -13,11 +12,31 @@ namespace AngleSharp.Io.Dom
     /// (once) as text or JSON.
     /// </summary>
     [DomName("Response")]
+    [DomExposed("Window")]
+    [DomExposed("Worker")]
     public sealed class Response
     {
         private readonly IResponse _response;
         private readonly Boolean _isRedirected;
+        private readonly AbortSignal _signal;
+        private readonly String _statusText;
+        private readonly String _type = "basic";
+        private Lazy<Task<Byte[]>> _sharedBody;
+        private ReadableStream _body;
         private Boolean _isBodyUsed;
+
+        /// <summary>
+        /// Creates a response that did not come from a server, as a script may do.
+        /// </summary>
+        /// <param name="body">The body, if any.</param>
+        /// <param name="init">The status and headers, if any.</param>
+        [DomConstructor]
+        public Response(Object body = null, ResponseInit init = null)
+            : this(CreateResponse(body, init), false, null)
+        {
+            _statusText = init?.StatusText ?? String.Empty;
+            _type = "default";
+        }
 
         /// <summary>
         /// Creates a response for the given one of a requester.
@@ -25,10 +44,27 @@ namespace AngleSharp.Io.Dom
         /// <param name="response">The received response.</param>
         /// <param name="isRedirected">True if the request has been redirected.</param>
         public Response(IResponse response, Boolean isRedirected = false)
+            : this(response, isRedirected, null)
         {
+        }
+
+        internal Response(IResponse response, Boolean isRedirected, AbortSignal signal)
+        {
+            _signal = signal;
             _response = response ?? throw new ArgumentNullException(nameof(response));
             _isRedirected = isRedirected;
             Headers = new Headers(response.Headers);
+        }
+
+        private Response(Response source)
+        {
+            _response = source._response;
+            _isRedirected = source._isRedirected;
+            _signal = source._signal;
+            _statusText = source._statusText;
+            _type = source._type;
+            _sharedBody = source._sharedBody;
+            Headers = new Headers(source.Headers);
         }
 
         /// <summary>
@@ -41,7 +77,7 @@ namespace AngleSharp.Io.Dom
         /// Gets the text of the status, e.g. "Not Found".
         /// </summary>
         [DomName("statusText")]
-        public String StatusText => GetStatusText(_response.StatusCode);
+        public String StatusText => _statusText ?? GetStatusText(_response.StatusCode);
 
         /// <summary>
         /// Gets if the status is a success (200 to 299).
@@ -65,7 +101,7 @@ namespace AngleSharp.Io.Dom
         /// Gets the type of the response.
         /// </summary>
         [DomName("type")]
-        public String Type => "basic";
+        public String Type => _type;
 
         /// <summary>
         /// Gets the headers of the response.
@@ -80,6 +116,25 @@ namespace AngleSharp.Io.Dom
         public Boolean IsBodyUsed => _isBodyUsed;
 
         /// <summary>
+        /// Gets the body as a stream, which delivers the data as it arrives.
+        /// Reading it counts as using the body.
+        /// </summary>
+        [DomName("body")]
+        public ReadableStream Body
+        {
+            get
+            {
+                if (_body == null)
+                {
+                    _body = CreateBodyStream();
+                    _body.OnDisturbed(() => _isBodyUsed = true);
+                }
+
+                return _body;
+            }
+        }
+
+        /// <summary>
         /// Reads the body as text, decoded with the charset of the content type
         /// (UTF-8 by default).
         /// </summary>
@@ -87,23 +142,117 @@ namespace AngleSharp.Io.Dom
         [DomName("text")]
         public async Task<String> Text()
         {
-            if (_isBodyUsed)
+            var bytes = await ReadBodyAsync().ConfigureAwait(false);
+
+            using (var reader = new StreamReader(new MemoryStream(bytes), GetEncoding(), true))
+            {
+                return reader.ReadToEnd();
+            }
+        }
+
+        /// <summary>
+        /// Reads the body as bytes, which scripts receive as an ArrayBuffer.
+        /// </summary>
+        /// <returns>The bytes of the body.</returns>
+        [DomName("arrayBuffer")]
+        public Task<Byte[]> ArrayBuffer() => ReadBodyAsync();
+
+        /// <summary>
+        /// Reads the body as bytes, which scripts receive as a Uint8Array.
+        /// </summary>
+        /// <returns>The bytes of the body.</returns>
+        [DomName("bytes")]
+        public async Task<ArraySegment<Byte>> Bytes() =>
+            new ArraySegment<Byte>(await ReadBodyAsync().ConfigureAwait(false));
+
+        /// <summary>
+        /// Reads the body into a blob typed with the content type.
+        /// </summary>
+        /// <returns>The blob holding the body.</returns>
+        [DomName("blob")]
+        public async Task<Blob> Blob()
+        {
+            var bytes = await ReadBodyAsync().ConfigureAwait(false);
+            return new Blob(bytes, Headers.Get(HeaderNames.ContentType) ?? String.Empty);
+        }
+
+        private async Task<Byte[]> ReadBodyAsync()
+        {
+            _signal?.ThrowIfAborted();
+
+            if (_isBodyUsed || _body != null && _body.Locked)
             {
                 throw new InvalidOperationException("The body has already been read.");
             }
 
             _isBodyUsed = true;
-            var content = _response.Content;
 
-            if (content == null)
+            if (_sharedBody != null)
             {
-                return String.Empty;
+                return await _sharedBody.Value.ConfigureAwait(false);
             }
 
-            using (var reader = new StreamReader(content, GetEncoding(), true))
+            //  reading through the stream, when there is one already, keeps the two
+            //  ways of consuming the body from racing over the same content
+            if (_body != null)
             {
-                return await reader.ReadToEndAsync().ConfigureAwait(false);
+                using (var memory = new MemoryStream())
+                using (var content = new ReadableStreamContentStream(_body))
+                {
+                    await content.CopyToAsync(memory).ConfigureAwait(false);
+                    return memory.ToArray();
+                }
             }
+
+            return await ReadAllAsync(_response.Content).ConfigureAwait(false);
+        }
+
+        private ReadableStream CreateBodyStream()
+        {
+            if (_sharedBody != null)
+            {
+                var shared = _sharedBody;
+                return new ReadableStream(
+                    start: async controller =>
+                    {
+                        var bytes = await shared.Value.ConfigureAwait(false);
+
+                        if (bytes.Length > 0)
+                        {
+                            controller.Enqueue(new ArraySegment<Byte>(bytes));
+                        }
+
+                        controller.Close();
+                    },
+                    pull: null,
+                    cancel: null,
+                    highWaterMark: 1.0,
+                    size: null);
+            }
+
+            return ReadableStream.FromStream(_response.Content ?? Stream.Null);
+        }
+
+        /// <summary>
+        /// Creates a copy of the response, whose body can be read independently. The body is
+        /// kept in memory then, once one of them reads it.
+        /// </summary>
+        /// <returns>The copy.</returns>
+        [DomName("clone")]
+        public Response Clone()
+        {
+            if (_isBodyUsed || _body != null && _body.Locked)
+            {
+                throw new InvalidOperationException("The body has already been read.");
+            }
+
+            if (_sharedBody == null)
+            {
+                var content = _response.Content;
+                _sharedBody = new Lazy<Task<Byte[]>>(() => ReadAllAsync(content));
+            }
+
+            return new Response(this);
         }
 
         /// <summary>
@@ -118,6 +267,52 @@ namespace AngleSharp.Io.Dom
             return JsonReader.Parse(text);
         }
 
+        private static async Task<Byte[]> ReadAllAsync(Stream content)
+        {
+            if (content == null)
+            {
+                return Array.Empty<Byte>();
+            }
+
+            using (var memory = new MemoryStream())
+            {
+                await content.CopyToAsync(memory).ConfigureAwait(false);
+                return memory.ToArray();
+            }
+        }
+
+        private static IResponse CreateResponse(Object body, ResponseInit init)
+        {
+            var status = init?.Status ?? 200;
+
+            if (status < 200 || status > 599)
+            {
+                throw new InvalidOperationException($"The status {status} is out of range.");
+            }
+
+            var response = new DefaultResponse { StatusCode = (HttpStatusCode)status };
+            var headers = new Headers(init?.Headers);
+
+            if (body != null)
+            {
+                var serialized = RequestBody.Serialize(body);
+                var contentType = serialized.ContentType ?? (body is String ? "text/plain;charset=UTF-8" : null);
+                response.Content = serialized.Content;
+
+                if (contentType != null && !headers.Has(HeaderNames.ContentType))
+                {
+                    headers.Set(HeaderNames.ContentType, contentType);
+                }
+            }
+
+            foreach (var header in headers.Pairs)
+            {
+                response.Headers[header.Key] = header.Value;
+            }
+
+            return response;
+        }
+
         private Encoding GetEncoding()
         {
             var contentType = Headers.Get(HeaderNames.ContentType);
@@ -126,13 +321,13 @@ namespace AngleSharp.Io.Dom
             {
                 var charset = new MimeType(contentType).GetParameter("charset");
 
-                if (!String.IsNullOrEmpty(charset) && TextEncoding.IsSupported(charset))
+                if (!String.IsNullOrEmpty(charset) && EncodingSupport.IsSupported(charset))
                 {
-                    return TextEncoding.Resolve(charset);
+                    return EncodingSupport.Resolve(charset);
                 }
             }
 
-            return TextEncoding.Utf8;
+            return EncodingSupport.Utf8;
         }
 
         private static String GetStatusText(HttpStatusCode status)
@@ -153,5 +348,30 @@ namespace AngleSharp.Io.Dom
 
             return text.ToString();
         }
+    }
+
+    /// <summary>
+    /// Represents the options for creating a <see cref="Response"/>.
+    /// </summary>
+    [DomName("ResponseInit")]
+    public sealed class ResponseInit
+    {
+        /// <summary>
+        /// Gets or sets the status code, by default 200.
+        /// </summary>
+        [DomName("status")]
+        public Int32? Status { get; set; }
+
+        /// <summary>
+        /// Gets or sets the text of the status.
+        /// </summary>
+        [DomName("statusText")]
+        public String StatusText { get; set; }
+
+        /// <summary>
+        /// Gets or sets the headers.
+        /// </summary>
+        [DomName("headers")]
+        public Headers Headers { get; set; }
     }
 }

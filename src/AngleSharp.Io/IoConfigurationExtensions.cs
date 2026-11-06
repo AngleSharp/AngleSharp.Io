@@ -2,13 +2,16 @@ namespace AngleSharp;
 
 using AngleSharp.Dom;
 using AngleSharp.Io;
+using AngleSharp.Io.BackgroundSyncApi;
 using AngleSharp.Io.Cookie;
 using AngleSharp.Io.Dom;
 using AngleSharp.Io.IndexedDb;
 using AngleSharp.Io.GeolocationApi;
 using AngleSharp.Io.Http;
 using AngleSharp.Io.Network;
+using AngleSharp.Io.NotificationsApi;
 using AngleSharp.Io.PermissionsApi;
+using AngleSharp.Io.PushApi;
 using AngleSharp.Io.Reporting;
 using AngleSharp.Io.Storage;
 using AngleSharp.Io.ClipboardApi;
@@ -56,7 +59,11 @@ public static class IoConfigurationExtensions
             .WithClipboard(options.ClipboardPlatform)
             .WithGeolocation(options.GeolocationPlatform)
             .WithStorageManager(options.StorageManagerPlatform)
-            .WithWebRtc(options.WebRtcPlatform);
+            .WithWebRtc(options.WebRtcPlatform)
+            .WithNotifications(options.NotificationPlatform)
+            .WithFileSystemAccess(options.FileSystemPlatform, options.FileSystemAccess)
+            .WithBackgroundSync(options.SyncPlatform)
+            .WithPush(options.PushPlatform);
     }
 
     #endregion
@@ -520,8 +527,9 @@ public static class IoConfigurationExtensions
 
     /// <summary>
     /// Registers the given permission policy, which backs
-    /// navigator.permissions and gates the clipboard, the geolocation, and
-    /// persisting the storage. Passing null leaves the configuration
+    /// navigator.permissions and gates the clipboard, the geolocation,
+    /// persisting the storage, notifications, the file system access,
+    /// background sync, and push. Passing null leaves the configuration
     /// unchanged, i.e., these features are not gated.
     /// </summary>
     /// <param name="configuration">The configuration to extend.</param>
@@ -680,6 +688,132 @@ public static class IoConfigurationExtensions
         return new Configuration(services)
             .WithOnly(registry)
             .WithOnly<IServiceWorkerProviderFactory>(new ServiceWorkerProviderFactory(registry));
+    }
+
+    #endregion
+
+    #region Notifications
+
+    /// <summary>
+    /// Registers a notification platform that considers every notification
+    /// shown without displaying anything.
+    /// </summary>
+    /// <param name="configuration">The configuration to extend.</param>
+    /// <returns>The new instance with the service.</returns>
+    public static IConfiguration WithNotifications(this IConfiguration configuration) =>
+        configuration.WithNotifications(new NotificationPlatform());
+
+    /// <summary>
+    /// Registers the given platform delivering the notifications. Passing
+    /// null leaves the configuration unchanged.
+    /// </summary>
+    /// <param name="configuration">The configuration to extend.</param>
+    /// <param name="platform">The platform to use.</param>
+    /// <returns>The new instance with the service.</returns>
+    public static IConfiguration WithNotifications(this IConfiguration configuration, INotificationPlatform platform)
+    {
+        if (platform is null)
+        {
+            return configuration;
+        }
+
+        return configuration.WithOnly(platform);
+    }
+
+    #endregion
+
+    #region File System Access
+
+    /// <summary>
+    /// Registers the given platform providing the file pickers and the files,
+    /// using the default options. Passing null leaves the configuration
+    /// unchanged.
+    /// </summary>
+    /// <param name="configuration">The configuration to extend.</param>
+    /// <param name="platform">The platform to use.</param>
+    /// <returns>The new instance with the service.</returns>
+    public static IConfiguration WithFileSystemAccess(this IConfiguration configuration, IFileSystemPlatform platform) =>
+        configuration.WithFileSystemAccess(platform, new FileSystemAccessOptions());
+
+    /// <summary>
+    /// Registers the given platform providing the file pickers and the files.
+    /// Passing null as platform leaves the configuration unchanged.
+    /// </summary>
+    /// <param name="configuration">The configuration to extend.</param>
+    /// <param name="platform">The platform to use.</param>
+    /// <param name="options">The options to use, or null for the default options.</param>
+    /// <returns>The new instance with the service.</returns>
+    public static IConfiguration WithFileSystemAccess(this IConfiguration configuration, IFileSystemPlatform platform, FileSystemAccessOptions options)
+    {
+        if (platform is null)
+        {
+            return configuration;
+        }
+
+        return configuration.WithOnly(platform).WithOnly(options ?? new FileSystemAccessOptions());
+    }
+
+    #endregion
+
+    #region Background Sync
+
+    /// <summary>
+    /// Registers a sync platform where tasks only fire when the host calls
+    /// their FireAsync method. Requires service workers to be registered.
+    /// </summary>
+    /// <param name="configuration">The configuration to extend.</param>
+    /// <returns>The new instance with the service.</returns>
+    public static IConfiguration WithBackgroundSync(this IConfiguration configuration) =>
+        configuration.WithBackgroundSync(new SyncPlatform());
+
+    /// <summary>
+    /// Registers the given platform scheduling the tasks of registration.sync
+    /// and registration.periodicSync. Requires service workers to be
+    /// registered. Passing null leaves the configuration unchanged.
+    /// </summary>
+    /// <param name="configuration">The configuration to extend.</param>
+    /// <param name="platform">The platform to use.</param>
+    /// <returns>The new instance with the service.</returns>
+    public static IConfiguration WithBackgroundSync(this IConfiguration configuration, ISyncPlatform platform)
+    {
+        if (platform is null)
+        {
+            return configuration;
+        }
+
+        return configuration.WithOnly(platform);
+    }
+
+    #endregion
+
+    #region Push
+
+    /// <summary>
+    /// Registers a push platform that works without a push service, i.e.,
+    /// subscriptions get a generated endpoint. Requires service workers to
+    /// be registered.
+    /// </summary>
+    /// <param name="configuration">The configuration to extend.</param>
+    /// <returns>The new instance with the service.</returns>
+    public static IConfiguration WithPush(this IConfiguration configuration) =>
+        configuration.WithPush(new PushPlatform());
+
+    /// <summary>
+    /// Registers the given platform behind registration.pushManager. Requires
+    /// service workers to be registered. Passing null leaves the
+    /// configuration unchanged.
+    /// </summary>
+    /// <param name="configuration">The configuration to extend.</param>
+    /// <param name="platform">The platform to use.</param>
+    /// <returns>The new instance with the service.</returns>
+    public static IConfiguration WithPush(this IConfiguration configuration, IPushPlatform platform)
+    {
+        if (platform is null)
+        {
+            return configuration;
+        }
+
+        return configuration.WithOnly(platform);
     }
 
     #endregion

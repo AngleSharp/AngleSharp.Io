@@ -1,13 +1,10 @@
 namespace AngleSharp.Io.Dom
 {
-    using AngleSharp.Attributes;
     using System;
 
     /// <summary>
     /// Represents an IndexedDB factory.
     /// </summary>
-    [DomName("IDBFactory")]
-    [DomExposed("Window")]
     public interface IIndexedDbFactory
     {
         /// <summary>
@@ -15,7 +12,6 @@ namespace AngleSharp.Io.Dom
         /// </summary>
         /// <param name="name">The database name.</param>
         /// <returns>The database instance.</returns>
-        [DomName("open")]
         IIndexedDbDatabase Open(String name);
 
         /// <summary>
@@ -24,7 +20,6 @@ namespace AngleSharp.Io.Dom
         /// <param name="name">The database name.</param>
         /// <param name="version">The requested version (must be greater than 0).</param>
         /// <returns>The database instance.</returns>
-        [DomName("open")]
         IIndexedDbDatabase Open(String name, Int64 version);
 
         /// <summary>
@@ -34,7 +29,6 @@ namespace AngleSharp.Io.Dom
         /// <param name="version">The requested version (must be greater than 0).</param>
         /// <param name="upgrade">The callback used for upgrade changes.</param>
         /// <returns>The database instance.</returns>
-        [DomName("open")]
         IIndexedDbDatabase Open(String name, Int64 version, Action<IIndexedDbUpgradeTransaction> upgrade);
 
         /// <summary>
@@ -42,7 +36,6 @@ namespace AngleSharp.Io.Dom
         /// </summary>
         /// <param name="name">The database name.</param>
         /// <returns>The open request.</returns>
-        [DomName("open")]
         IIndexedDbRequest<IIndexedDbDatabase> OpenRequest(String name);
 
         /// <summary>
@@ -51,7 +44,6 @@ namespace AngleSharp.Io.Dom
         /// <param name="name">The database name.</param>
         /// <param name="version">The requested version (must be greater than 0).</param>
         /// <returns>The open request.</returns>
-        [DomName("open")]
         IIndexedDbRequest<IIndexedDbDatabase> OpenRequest(String name, Int64 version);
 
         /// <summary>
@@ -61,7 +53,6 @@ namespace AngleSharp.Io.Dom
         /// <param name="version">The requested version (must be greater than 0).</param>
         /// <param name="upgrade">The callback used for upgrade changes.</param>
         /// <returns>The open request.</returns>
-        [DomName("open")]
         IIndexedDbRequest<IIndexedDbDatabase> OpenRequest(String name, Int64 version, Action<IIndexedDbUpgradeTransaction> upgrade);
 
         /// <summary>
@@ -73,7 +64,6 @@ namespace AngleSharp.Io.Dom
         /// <param name="upgrade">The callback used for upgrade changes.</param>
         /// <param name="waitForUnblock">True to keep retrying when blocked until the request can proceed.</param>
         /// <returns>The open request.</returns>
-        [DomName("open")]
         IIndexedDbRequest<IIndexedDbDatabase> OpenRequest(String name, Int64 version, Action<IIndexedDbUpgradeTransaction> upgrade, Boolean waitForUnblock);
 
         /// <summary>
@@ -81,7 +71,6 @@ namespace AngleSharp.Io.Dom
         /// </summary>
         /// <param name="name">The database name.</param>
         /// <returns>True if the database existed and was removed.</returns>
-        [DomName("deleteDatabase")]
         Boolean DeleteDatabase(String name);
 
         /// <summary>
@@ -89,7 +78,6 @@ namespace AngleSharp.Io.Dom
         /// </summary>
         /// <param name="name">The database name.</param>
         /// <returns>The delete request.</returns>
-        [DomName("deleteDatabase")]
         IIndexedDbRequest<Boolean> DeleteDatabaseRequest(String name);
 
         /// <summary>
@@ -99,7 +87,6 @@ namespace AngleSharp.Io.Dom
         /// <param name="name">The database name.</param>
         /// <param name="waitForUnblock">True to keep retrying when blocked until the delete can proceed.</param>
         /// <returns>The delete request.</returns>
-        [DomName("deleteDatabase")]
         IIndexedDbRequest<Boolean> DeleteDatabaseRequest(String name, Boolean waitForUnblock);
     }
 }

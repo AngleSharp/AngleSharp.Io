@@ -141,4 +141,35 @@ public sealed class IoOptions
     /// which means that RTCPeerConnection cannot be constructed.
     /// </summary>
     public IRtcPlatform WebRtcPlatform { get; set; } = null;
+
+    /// <summary>
+    /// Gets or sets the platform delivering notifications.
+    /// By default, this is null, which means that Notification cannot be constructed.
+    /// </summary>
+    public INotificationPlatform NotificationPlatform { get; set; } = null;
+
+    /// <summary>
+    /// Gets or sets the platform providing the file pickers and the files.
+    /// By default, this is null, which means that the pickers are rejected.
+    /// </summary>
+    public IFileSystemPlatform FileSystemPlatform { get; set; } = null;
+
+    /// <summary>
+    /// Gets or sets the options for the file system access. Only considered
+    /// together with a <see cref="FileSystemPlatform"/>.
+    /// </summary>
+    public FileSystemAccessOptions FileSystemAccess { get; set; } = new FileSystemAccessOptions();
+
+    /// <summary>
+    /// Gets or sets the platform scheduling the background sync tasks.
+    /// By default, this is null, which means that registration.sync and
+    /// registration.periodicSync will not be available.
+    /// </summary>
+    public ISyncPlatform SyncPlatform { get; set; } = null;
+
+    /// <summary>
+    /// Gets or sets the platform talking to a push service. By default, this
+    /// is null, which means that registration.pushManager will not be available.
+    /// </summary>
+    public IPushPlatform PushPlatform { get; set; } = null;
 }

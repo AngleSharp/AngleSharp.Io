@@ -18,6 +18,10 @@ var options = new IoOptions
     StorageManagerPlatform = myStorageManagerPlatform, // optional
     ServiceWorkerPlatform = myServiceWorkerPlatform, // optional
     WebRtcPlatform = new LoopbackRtcPlatform(), // optional
+    NotificationPlatform = myNotificationPlatform, // optional
+    FileSystemPlatform = myFileSystemPlatform, // optional
+    SyncPlatform = mySyncPlatform, // optional
+    PushPlatform = myPushPlatform, // optional
 };
 
 var config = Configuration.Default

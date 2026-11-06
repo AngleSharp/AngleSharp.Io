@@ -32,6 +32,33 @@ public static class PermissionNames
     /// </summary>
     public static readonly String PersistentStorage = "persistent-storage";
 
+    /// <summary>
+    /// Reading files via window.showOpenFilePicker() and their handles.
+    /// Having <see cref="FileSystemWrite"/> granted includes reading.
+    /// </summary>
+    public static readonly String FileSystemRead = "file-system-read";
+
+    /// <summary>
+    /// Writing files via window.showSaveFilePicker() and their handles.
+    /// </summary>
+    public static readonly String FileSystemWrite = "file-system-write";
+
+    /// <summary>
+    /// Registering one-off tasks via ServiceWorkerRegistration.sync.
+    /// </summary>
+    public static readonly String BackgroundSync = "background-sync";
+
+    /// <summary>
+    /// Registering periodic tasks via ServiceWorkerRegistration.periodicSync.
+    /// </summary>
+    public static readonly String PeriodicBackgroundSync = "periodic-background-sync";
+
+    /// <summary>
+    /// Subscribing via ServiceWorkerRegistration.pushManager. Subscriptions
+    /// with userVisibleOnly also need <see cref="Notifications"/>.
+    /// </summary>
+    public static readonly String Push = "push";
+
     internal static readonly String[] All = new[]
     {
         Geolocation,
@@ -39,5 +66,10 @@ public static class PermissionNames
         ClipboardRead,
         ClipboardWrite,
         PersistentStorage,
+        FileSystemRead,
+        FileSystemWrite,
+        BackgroundSync,
+        PeriodicBackgroundSync,
+        Push,
     };
 }
