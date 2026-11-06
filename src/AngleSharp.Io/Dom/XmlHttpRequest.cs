@@ -5,6 +5,7 @@ using AngleSharp.Browser;
 using AngleSharp.Dom;
 using AngleSharp.Dom.Events;
 using AngleSharp.Html;
+using AngleSharp.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,9 +26,11 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     #region Fields
 
     private const Int32 BufferSize = 16384;
+    private static readonly TimeSpan ProgressInterval = TimeSpan.FromMilliseconds(50);
 
     private readonly Dictionary<String, String> _headers;
     private readonly IWindow _window;
+    private readonly XmlHttpRequestUpload _upload;
 
     private RequesterState _readyState;
     private Int32 _timeout;
@@ -40,6 +43,14 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     private String _responseUrl;
     private String _responseText;
     private IDownload _download;
+    private Boolean _aborted;
+    private Int64 _loaded;
+    private Int64 _total;
+    private Boolean _lengthComputable;
+    private Boolean _uploadComplete;
+    private Boolean _hasUploadBody;
+    private Int64 _uploadLoaded;
+    private Int64 _uploadTotal;
 
     #endregion
 
@@ -52,6 +63,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     public XmlHttpRequest(IWindow window)
     {
         _window = window;
+        _upload = new XmlHttpRequestUpload();
         _async = true;
         _method = HttpMethod.Get;
         _headers = new Dictionary<String, String>();
@@ -109,10 +121,10 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>
-    /// Gets the associated upload process, if any.
+    /// Gets the associated upload process.
     /// </summary>
     [DomName("upload")]
-    public XmlHttpRequestUpload Upload => null;
+    public XmlHttpRequestUpload Upload => _upload;
 
     /// <summary>
     /// Gets or sets if credentials should be used for the request.
@@ -155,7 +167,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     public Object Response => null;
 
     /// <summary>
-    /// Gets the body text of the response.
+    /// Gets the body text of the response, which grows while the response is loading.
     /// </summary>
     [DomName("responseText")]
     public String ResponseText => _responseText;
@@ -176,10 +188,14 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     [DomName("abort")]
     public void Abort()
     {
-        if (_readyState == RequesterState.Loading)
+        if (_readyState == RequesterState.HeadersReceived || _readyState == RequesterState.Loading)
         {
-            _download.Cancel();
-            Fire(AbortEvent);
+            _aborted = true;
+            _download?.Cancel();
+            FinishUpload(AbortEvent);
+            ReadyState = RequesterState.Done;
+            FireProgress(AbortEvent);
+            FireProgress(LoadEndEvent);
         }
     }
 
@@ -232,13 +248,23 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
             {
                 _headers.Clear();
                 ReadyState = RequesterState.Done;
-                Fire(ErrorEvent);
+                FireProgress(ErrorEvent);
+                FireProgress(LoadEndEvent);
             }
             else if (loader != null)
             {
+                var content = requestBody.Content;
+                _hasUploadBody = content != Stream.Null && (!content.CanSeek || content.Length > 0);
+                _uploadComplete = !_hasUploadBody;
+
+                if (_hasUploadBody)
+                {
+                    content = CreateUploadStream(content);
+                }
+
                 var request = new DocumentRequest(_url)
                 {
-                    Body = requestBody.Content,
+                    Body = content,
                     Method = _method,
                     MimeType = default,
                     Referer = _window.Document.DocumentUri,
@@ -251,8 +277,13 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
 
                 _headers.Clear();
 
-                Fire(LoadStartEvent);
-                ReadyState = RequesterState.HeadersReceived;
+                FireProgress(LoadStartEvent);
+
+                if (_hasUploadBody)
+                {
+                    FireUpload(LoadStartEvent, 0, _uploadTotal);
+                }
+
                 var connection = Receive(loader, request);
 
                 if (!_async)
@@ -337,18 +368,19 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
 
     private async Task Receive(IDocumentLoader loader, DocumentRequest request)
     {
-        var eventName = ErrorEvent;
-
         try
         {
             _download = loader.FetchAsync(request);
 
             using (var response = await _download.Task.ConfigureAwait(false))
             {
+                if (_aborted)
+                {
+                    return;
+                }
+
                 if (response != null && FileUrlPolicy.IsAllowed(new Url(_window.Document.Url), response.Address))
                 {
-                    eventName = LoadEvent;
-
                     foreach (var header in response.Headers)
                     {
                         _headers[header.Key] = header.Value;
@@ -356,37 +388,175 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
 
                     _responseUrl = response.Address.Href;
                     _responseStatus = response.StatusCode;
-                    ReadyState = RequesterState.Loading;
+                    ReadyState = RequesterState.HeadersReceived;
+                    await ReadBody(response.Content).ConfigureAwait(false);
 
-                    using (var ms = new MemoryStream())
+                    if (!_aborted)
                     {
-                        await response.Content.CopyToAsync(ms, BufferSize).ConfigureAwait(false);
-                        ms.Seek(0, SeekOrigin.Begin);
-
-                        using (var reader = new StreamReader(ms))
-                        {
-                            _responseText = reader.ReadToEnd();
-                        }
+                        FinishUpload(LoadEvent);
+                        ReadyState = RequesterState.Done;
+                        FireProgress(LoadEvent);
+                        FireProgress(LoadEndEvent);
                     }
-
-                    Fire(LoadEndEvent);
                 }
-
-                ReadyState = RequesterState.Done;
-                Fire(eventName);
+                else
+                {
+                    Fail(ErrorEvent);
+                }
             }
         }
         catch (TaskCanceledException)
         {
-            ReadyState = RequesterState.Done;
-            Fire(TimeoutEvent);
+            Fail(TimeoutEvent);
         }
         catch (Exception)
         {
-            ReadyState = RequesterState.Done;
-            Fire(ErrorEvent);
+            Fail(ErrorEvent);
         }
     }
+
+    private async Task ReadBody(Stream content)
+    {
+        SetResponseTotal();
+        ReadyState = RequesterState.Loading;
+
+        var encoding = GetResponseEncoding();
+        var decoder = encoding.GetDecoder();
+        var text = new StringBuilder();
+        var buffer = new Byte[BufferSize];
+        var chars = new Char[encoding.GetMaxCharCount(BufferSize)];
+        var sawFirst = false;
+        var lastProgress = DateTime.UtcNow;
+
+        if (content != null)
+        {
+            while (true)
+            {
+                var count = await content.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+
+                if (count == 0 || _aborted)
+                {
+                    break;
+                }
+
+                var offset = 0;
+
+                //  the leading byte order mark is part of the transport, not the text
+                if (!sawFirst && encoding.CodePage == Encoding.UTF8.CodePage &&
+                    count >= 3 && buffer[0] == 0xef && buffer[1] == 0xbb && buffer[2] == 0xbf)
+                {
+                    offset = 3;
+                }
+
+                sawFirst = true;
+                _loaded += count;
+                var written = decoder.GetChars(buffer, offset, count - offset, chars, 0);
+                text.Append(chars, 0, written);
+                var now = DateTime.UtcNow;
+
+                if (now - lastProgress >= ProgressInterval)
+                {
+                    lastProgress = now;
+                    _responseText = text.ToString();
+                    FireProgress(ProgressEvent);
+                }
+            }
+        }
+
+        _responseText = text.ToString();
+
+        if (!_aborted)
+        {
+            FireProgress(ProgressEvent);
+        }
+    }
+
+    private void Fail(String eventName)
+    {
+        if (!_aborted)
+        {
+            FinishUpload(eventName);
+            ReadyState = RequesterState.Done;
+            FireProgress(eventName);
+            FireProgress(LoadEndEvent);
+        }
+    }
+
+    private void SetResponseTotal()
+    {
+        //  a content encoding makes the transported length differ from the received bytes
+        if (_headers.TryGetValue(HeaderNames.ContentLength, out var value) &&
+            Int64.TryParse(value, out var length) &&
+            !_headers.ContainsKey(HeaderNames.ContentEncoding))
+        {
+            _total = length;
+            _lengthComputable = true;
+        }
+    }
+
+    private Encoding GetResponseEncoding()
+    {
+        var contentType = _mime ?? (_headers.TryGetValue(HeaderNames.ContentType, out var value) ? value : null);
+
+        if (contentType != null)
+        {
+            var charset = new MimeType(contentType).GetParameter("charset");
+
+            if (!String.IsNullOrEmpty(charset) && TextEncoding.IsSupported(charset))
+            {
+                return TextEncoding.Resolve(charset);
+            }
+        }
+
+        return TextEncoding.Utf8;
+    }
+
+    private Stream CreateUploadStream(Stream content)
+    {
+        try
+        {
+            _uploadTotal = content.CanSeek ? content.Length : 0;
+        }
+        catch (NotSupportedException)
+        {
+            _uploadTotal = 0;
+        }
+
+        var lastProgress = DateTime.UtcNow;
+        return new ProgressReportingStream(content, (loaded, completed) =>
+        {
+            _uploadLoaded = loaded;
+
+            if (completed)
+            {
+                FinishUpload(LoadEvent);
+            }
+            else if (!_uploadComplete)
+            {
+                var now = DateTime.UtcNow;
+
+                if (now - lastProgress >= ProgressInterval)
+                {
+                    lastProgress = now;
+                    FireUpload(ProgressEvent, loaded, _uploadTotal);
+                }
+            }
+        });
+    }
+
+    private void FinishUpload(String eventName)
+    {
+        if (_hasUploadBody && !_uploadComplete)
+        {
+            _uploadComplete = true;
+            var total = Math.Max(_uploadLoaded, _uploadTotal);
+            FireUpload(eventName, _uploadLoaded, total);
+            FireUpload(LoadEndEvent, _uploadLoaded, total);
+        }
+    }
+
+    private void FireUpload(String eventName, Int64 loaded, Int64 total) =>
+        Enqueue(() => _upload.Dispatch(new ProgressEvent(eventName, lengthComputable: total > 0, loaded: loaded, total: total)));
 
     private IEventLoop GetEventLoop() =>
         _window?.Document?.Context.GetService<IEventLoop>();
@@ -408,7 +578,30 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     private void Fire(String eventName) =>
-        GetEventLoop().Enqueue(() => Dispatch(new Event(eventName)));
+        Enqueue(() => Dispatch(new Event(eventName)));
+
+    private void FireProgress(String eventName)
+    {
+        var loaded = _loaded;
+        var total = _total;
+        var lengthComputable = _lengthComputable;
+        Enqueue(() => Dispatch(new ProgressEvent(eventName, lengthComputable: lengthComputable, loaded: loaded, total: total)));
+    }
+
+    private void Enqueue(Action action)
+    {
+        var loop = GetEventLoop();
+
+        //  without a loop the events still have to fire, just right away
+        if (loop != null)
+        {
+            loop.Enqueue(action);
+        }
+        else
+        {
+            action.Invoke();
+        }
+    }
 
     #endregion
 }

@@ -33,7 +33,7 @@ public sealed class PushMessageData
     /// </summary>
     /// <returns>The blob, which has no type.</returns>
     [DomName("blob")]
-    public IBlob Blob() => new InputFile(String.Empty, String.Empty, ArrayBuffer());
+    public IBlob Blob() => new Blob(ArrayBuffer());
 
     /// <summary>
     /// Gets the payload as an array of bytes.

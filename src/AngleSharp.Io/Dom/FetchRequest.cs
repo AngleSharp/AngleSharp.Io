@@ -19,6 +19,7 @@ namespace AngleSharp.Io.Dom
         private readonly Byte[] _body;
         private readonly String _mimeType;
         private Boolean _isBodyUsed;
+        private ReadableStream _bodyStream;
 
         /// <summary>
         /// Creates a new request.
@@ -161,6 +162,30 @@ namespace AngleSharp.Io.Dom
         /// </summary>
         [DomName("bodyUsed")]
         public Boolean IsBodyUsed => _isBodyUsed;
+
+        /// <summary>
+        /// Gets the body as a stream, or null if the request has none.
+        /// Reading it counts as using the body.
+        /// </summary>
+        [DomName("body")]
+        public ReadableStream Body
+        {
+            get
+            {
+                if (_body == null)
+                {
+                    return null;
+                }
+
+                if (_bodyStream == null)
+                {
+                    _bodyStream = ReadableStream.FromStream(new MemoryStream(_body, false));
+                    _bodyStream.OnDisturbed(() => _isBodyUsed = true);
+                }
+
+                return _bodyStream;
+            }
+        }
 
         /// <summary>
         /// Reads the body as text.

@@ -1013,6 +1013,9 @@ The `SaveToAsync` (as well as the `CopyToAsync`) are extension methods for the `
 - Beacon support (`navigator.sendBeacon`) for fire-and-forget requests
 - Reporting of network errors and other diagnostics with injectable sinks
 - WebRTC signaling (`RTCPeerConnection`) with data channels and a pluggable transport
+- `XMLHttpRequest` with `ProgressEvent`s, chunked `progress`, and `upload`
+- `Blob`, `File`, and `FileReader` of the File API
+- Streams (`ReadableStream`, `WritableStream`, `TransformStream`, the text codec and compression streams), with `response.body` delivering data as it arrives
 
 ## Participating
 

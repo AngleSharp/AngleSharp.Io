@@ -1,9 +1,11 @@
 # 1.3.0
 
-Released on Wednesday, November 4 2026.
+Released on Friday, November 6 2026.
 
 - Updated `RtcIceServer.Urls` to `RtcIceServerUrls`, as `urls` takes a single URL or several
+- Improved `XMLHttpRequest` to read the body in chunks: `progress` fires about every 50 ms with `loaded` and `total` from `Content-Length`, and `responseText` grows while `LOADING`
 - Improved `json()` with a nesting limit of 512 for deeply nested documents (#55) @michaelthyregod
+- Fixed the order of the final `XMLHttpRequest` events: `readystatechange` to `DONE`, then `load` (or `error`, `abort`, `timeout`), then `loadend`
 - Fixed the `ErrorEvent` of a `WebSocket` not telling the problem, so that its `Message` and `Error` were of no use
 - Fixed `fetch` and `XMLHttpRequest` reading `file:` URLs from documents that are not `file:` themselves (#53) @michaelthyregod
 - Fixed `navigator.clipboard` being null for script without a platform, when pages test for its members; it denies access now
@@ -13,6 +15,13 @@ Released on Wednesday, November 4 2026.
 - Added `clone` to `Response`
 - Added the options of `navigator.locks.request`, which are the `mode`, `ifAvailable`, `steal` and `signal`
 - Added the IndexedDB of the standard for scripts (requests with events, transactions, structured values, keys of all kinds, key ranges, indexes and cursors), as `indexedDB` was a synchronous API for strings that the usual ways of using it never got an event from; the API for .NET code remains, without the names for scripts
+- Added `ProgressEvent` with its script constructor, fired by `XMLHttpRequest` for `loadstart`, `progress`, `load`, `error`, `abort`, `timeout` and `loadend`
+- Added `upload` to `XMLHttpRequest` with its `loadstart`, `progress`, `load` and `loadend` for a request with a body
+- Added `Blob` and `File` with their script constructors, `text`, `arrayBuffer`, `bytes`, `stream` and a `slice` taking negative indices
+- Added `FileReader` with `readAsText`, `readAsDataURL`, `readAsArrayBuffer`, `readAsBinaryString`, `abort` and the progress events of the File API
+- Added the stream classes: `ReadableStream` (with `getReader`, `cancel`, `tee`, `pipeTo` and `pipeThrough`), `WritableStream` with its writer, `TransformStream`, and the `CountQueuingStrategy` and `ByteLengthQueuingStrategy`
+- Added `TextEncoderStream` and `TextDecoderStream`, and `CompressionStream` and `DecompressionStream` for gzip, deflate and deflate-raw (deflate needs .NET 8)
+- Added `body`, `arrayBuffer`, `bytes` and `blob` to `Response`, delivering the data as it arrives, and `body` to `Request`; a `ReadableStream` can be the body of both
 - Added `cookieEnabled`, `hardwareConcurrency`, `maxTouchPoints` and `webdriver` to `navigator`
 - Added `AbortController` and `AbortSignal`, also taken by `fetch` as its `signal`, which stops a download and rejects reading the body afterwards
 - Added `Notification` with `requestPermission` and an injected delivery platform (#41)

@@ -23,6 +23,7 @@ namespace AngleSharp.Io.Dom
         private readonly String _statusText;
         private readonly String _type = "basic";
         private Lazy<Task<Byte[]>> _sharedBody;
+        private ReadableStream _body;
         private Boolean _isBodyUsed;
 
         /// <summary>
@@ -116,6 +117,25 @@ namespace AngleSharp.Io.Dom
         public Boolean IsBodyUsed => _isBodyUsed;
 
         /// <summary>
+        /// Gets the body as a stream, which delivers the data as it arrives.
+        /// Reading it counts as using the body.
+        /// </summary>
+        [DomName("body")]
+        public ReadableStream Body
+        {
+            get
+            {
+                if (_body == null)
+                {
+                    _body = CreateBodyStream();
+                    _body.OnDisturbed(() => _isBodyUsed = true);
+                }
+
+                return _body;
+            }
+        }
+
+        /// <summary>
         /// Reads the body as text, decoded with the charset of the content type
         /// (UTF-8 by default).
         /// </summary>
@@ -123,9 +143,45 @@ namespace AngleSharp.Io.Dom
         [DomName("text")]
         public async Task<String> Text()
         {
+            var bytes = await ReadBodyAsync().ConfigureAwait(false);
+
+            using (var reader = new StreamReader(new MemoryStream(bytes), GetEncoding(), true))
+            {
+                return reader.ReadToEnd();
+            }
+        }
+
+        /// <summary>
+        /// Reads the body as bytes, which scripts receive as an ArrayBuffer.
+        /// </summary>
+        /// <returns>The bytes of the body.</returns>
+        [DomName("arrayBuffer")]
+        public Task<Byte[]> ArrayBuffer() => ReadBodyAsync();
+
+        /// <summary>
+        /// Reads the body as bytes, which scripts receive as a Uint8Array.
+        /// </summary>
+        /// <returns>The bytes of the body.</returns>
+        [DomName("bytes")]
+        public async Task<ArraySegment<Byte>> Bytes() =>
+            new ArraySegment<Byte>(await ReadBodyAsync().ConfigureAwait(false));
+
+        /// <summary>
+        /// Reads the body into a blob typed with the content type.
+        /// </summary>
+        /// <returns>The blob holding the body.</returns>
+        [DomName("blob")]
+        public async Task<Blob> Blob()
+        {
+            var bytes = await ReadBodyAsync().ConfigureAwait(false);
+            return new Blob(bytes, Headers.Get(HeaderNames.ContentType) ?? String.Empty);
+        }
+
+        private async Task<Byte[]> ReadBodyAsync()
+        {
             _signal?.ThrowIfAborted();
 
-            if (_isBodyUsed)
+            if (_isBodyUsed || _body != null && _body.Locked)
             {
                 throw new InvalidOperationException("The body has already been read.");
             }
@@ -134,25 +190,48 @@ namespace AngleSharp.Io.Dom
 
             if (_sharedBody != null)
             {
-                var bytes = await _sharedBody.Value.ConfigureAwait(false);
+                return await _sharedBody.Value.ConfigureAwait(false);
+            }
 
-                using (var reader = new StreamReader(new MemoryStream(bytes), GetEncoding(), true))
+            //  reading through the stream, when there is one already, keeps the two
+            //  ways of consuming the body from racing over the same content
+            if (_body != null)
+            {
+                using (var memory = new MemoryStream())
+                using (var content = new ReadableStreamContentStream(_body))
                 {
-                    return reader.ReadToEnd();
+                    await content.CopyToAsync(memory).ConfigureAwait(false);
+                    return memory.ToArray();
                 }
             }
 
-            var content = _response.Content;
+            return await ReadAllAsync(_response.Content).ConfigureAwait(false);
+        }
 
-            if (content == null)
+        private ReadableStream CreateBodyStream()
+        {
+            if (_sharedBody != null)
             {
-                return String.Empty;
+                var shared = _sharedBody;
+                return new ReadableStream(
+                    start: async controller =>
+                    {
+                        var bytes = await shared.Value.ConfigureAwait(false);
+
+                        if (bytes.Length > 0)
+                        {
+                            controller.Enqueue(new ArraySegment<Byte>(bytes));
+                        }
+
+                        controller.Close();
+                    },
+                    pull: null,
+                    cancel: null,
+                    highWaterMark: 1.0,
+                    size: null);
             }
 
-            using (var reader = new StreamReader(content, GetEncoding(), true))
-            {
-                return await reader.ReadToEndAsync().ConfigureAwait(false);
-            }
+            return ReadableStream.FromStream(_response.Content ?? Stream.Null);
         }
 
         /// <summary>
@@ -163,7 +242,7 @@ namespace AngleSharp.Io.Dom
         [DomName("clone")]
         public Response Clone()
         {
-            if (_isBodyUsed)
+            if (_isBodyUsed || _body != null && _body.Locked)
             {
                 throw new InvalidOperationException("The body has already been read.");
             }
