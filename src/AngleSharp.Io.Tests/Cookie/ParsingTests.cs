@@ -449,6 +449,19 @@ namespace AngleSharp.Io.Tests.Cookie
             StringAssert.DoesNotContain("k=v", reloaded.GetCookie(new Url("https://evil.example/")));
         }
 
+        [Test]
+        public void ExpiresWithDayOutsideTheMonthIsIgnored()
+        {
+            var container = CreateContainerWithSetup(c =>
+            {
+                c.SetCookie(new Url("http://example.com/"), "a=b; Expires=Wed, 31 Feb 2030 10:00:00 GMT");
+            });
+
+            var cookie = container.Cookies.Single();
+            Assert.AreEqual("b", cookie.Value);
+            Assert.IsFalse(cookie.IsPersistent);
+        }
+
         private static AdvancedCookieProvider CreateContainerWithSetup(Action<ICookieProvider> setup)
         {
             var container = new AdvancedCookieProvider(new MemoryFileHandler());
