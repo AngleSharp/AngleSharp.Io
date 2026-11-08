@@ -217,9 +217,10 @@ namespace AngleSharp.Io.Cookie
         /// <returns>The removed cookies.</returns>
         public IEnumerable<WebCookie> RemoveCookies(String domain, String path = null)
         {
-            var cookies = FindCookies(domain, path);
+            // taken before the removal, as the lazy query would find nothing afterwards
+            var cookies = FindCookies(domain, path).ToArray();
 
-            if (cookies.Any())
+            if (cookies.Length > 0)
             {
                 _cookies.RemoveAll(cookie => cookies.Contains(cookie));
                 WriteCookies();
@@ -236,6 +237,7 @@ namespace AngleSharp.Io.Cookie
         {
             var cookies = _cookies.ToArray();
             _cookies.RemoveAll(cookie => true);
+            WriteCookies();
             return cookies;
         }
 

@@ -1,3 +1,7 @@
+# 1.3.2
+
+- Fixed `RemoveCookies` returning no cookies and `RemoveAllCookies` not updating the cookie file @michaelthyregod
+
 # 1.3.1
 
 Released on Sunday, November 8 2026.
