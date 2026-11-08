@@ -463,6 +463,63 @@ namespace AngleSharp.Io.Tests.Http
         }
 
         [Test]
+        public async Task ParallelStoresToOneOriginAllSucceed()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "anglesharp-http-cache-" + Guid.NewGuid().ToString("N"));
+
+            try
+            {
+                Func<Request, CancellationToken, Task<IResponse>> network = (request, _) =>
+                    Task.FromResult<IResponse>(WithAddress(Ok(request.Address.Path, ("Cache-Control", "max-age=60")), request));
+                var cache = CreateCache(out _, new HttpCacheOptions { Handler = new PersistenceHttpCacheHandler(directory) });
+
+                await StoreInParallel(64, i => cache.SendAsync(Get($"https://a.example/r{i}"), network, CancellationToken.None)).ConfigureAwait(false);
+
+                for (var i = 0; i < 64; i++)
+                {
+                    var response = await cache.MatchAsync(Get($"https://a.example/r{i}"), CancellationToken.None).ConfigureAwait(false);
+                    Assert.AreEqual($"r{i}", Read(response));
+                }
+
+                CollectionAssert.AreEqual(new[] { "https://a.example" }, new PersistenceHttpCacheHandler(directory).GetOrigins().ToArray());
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
+        [Test]
+        public async Task ParallelStoresOfOneKeyAllSucceed()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "anglesharp-http-cache-" + Guid.NewGuid().ToString("N"));
+
+            try
+            {
+                Func<Request, CancellationToken, Task<IResponse>> network = (request, _) =>
+                    Task.FromResult<IResponse>(WithAddress(Ok("same", ("Cache-Control", "max-age=60")), request));
+                var cache = CreateCache(out _, new HttpCacheOptions { Handler = new PersistenceHttpCacheHandler(directory) });
+
+                await StoreInParallel(16, _ => cache.SendAsync(Get("https://a.example/page"), network, CancellationToken.None)).ConfigureAwait(false);
+
+                var response = await cache.MatchAsync(Get("https://a.example/page"), CancellationToken.None).ConfigureAwait(false);
+
+                Assert.AreEqual("same", Read(response));
+                Assert.IsEmpty(Directory.GetFiles(directory, "*.tmp", SearchOption.AllDirectories));
+            }
+            finally
+            {
+                if (Directory.Exists(directory))
+                {
+                    Directory.Delete(directory, true);
+                }
+            }
+        }
+
+        [Test]
         public void WithHttpCacheWrapsHttpRequestersOnly()
         {
             var config = Configuration.Default.WithRequesters().WithHttpCache();
@@ -599,6 +656,29 @@ namespace AngleSharp.Io.Tests.Http
             }
 
             return response;
+        }
+
+        private static DefaultResponse WithAddress(DefaultResponse response, Request request)
+        {
+            response.Address = request.Address;
+            return response;
+        }
+
+        private static async Task StoreInParallel(Int32 count, Func<Int32, Task<IResponse>> send)
+        {
+            // all sends wait for the same signal, such that the stores really overlap
+            var start = new TaskCompletionSource<Boolean>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tasks = Enumerable.Range(0, count)
+                .Select(i => Task.Run(async () =>
+                {
+                    await start.Task.ConfigureAwait(false);
+                    using (await send(i).ConfigureAwait(false))
+                    {
+                    }
+                }))
+                .ToArray();
+            start.SetResult(true);
+            await Task.WhenAll(tasks).ConfigureAwait(false);
         }
 
         private static String Read(IResponse response)

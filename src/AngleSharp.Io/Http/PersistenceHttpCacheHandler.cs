@@ -66,39 +66,56 @@ namespace AngleSharp.Io.Http
 
             if (variants.Length == 0)
             {
-                if (File.Exists(filePath))
+                try
                 {
-                    File.Delete(filePath);
-                }
+                    if (File.Exists(filePath))
+                    {
+                        File.Delete(filePath);
+                    }
 
-                if (Directory.Exists(originPath) && !Directory.EnumerateFiles(originPath, "*" + EntryExtension).Any())
+                    if (Directory.Exists(originPath) && !Directory.EnumerateFiles(originPath, "*" + EntryExtension).Any())
+                    {
+                        Directory.Delete(originPath, true);
+                    }
+                }
+                catch (IOException)
                 {
-                    Directory.Delete(originPath, true);
+                    // a store to the same origin at the same moment keeps the folder
                 }
 
                 return;
             }
-
-            Directory.CreateDirectory(originPath);
-            File.WriteAllText(Path.Combine(originPath, OriginFileName), origin ?? String.Empty);
 
             // write next to the target and swap afterwards, such that readers
             // never observe a half-written entry
             var content = Serialize(key, variants);
             var tempPath = filePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
 
-            using (var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true))
+            try
             {
-                await stream.WriteAsync(content, 0, content.Length, cancel).ConfigureAwait(false);
-            }
+                Directory.CreateDirectory(originPath);
+                WriteOriginFile(Path.Combine(originPath, OriginFileName), origin);
 
-            if (File.Exists(filePath))
-            {
-                File.Replace(tempPath, filePath, null);
+                using (var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true))
+                {
+                    await stream.WriteAsync(content, 0, content.Length, cancel).ConfigureAwait(false);
+                }
+
+                if (File.Exists(filePath))
+                {
+                    File.Replace(tempPath, filePath, null);
+                }
+                else
+                {
+                    File.Move(tempPath, filePath);
+                }
             }
-            else
+            catch (IOException)
             {
-                File.Move(tempPath, filePath);
+                // parallel loads store at the same moment: another store of the same key swapped
+                // in its entry, which is as good as this one, or the folder was being removed;
+                // like a failed read, a failed store only means a cache miss later
+                TryDelete(tempPath);
             }
         }
 
@@ -147,6 +164,38 @@ namespace AngleSharp.Io.Http
             }
 
             return result;
+        }
+
+        private static void WriteOriginFile(String originFile, String origin)
+        {
+            // the folder is named by the hash of the origin, so an existing file already has this
+            // content; writing it again on every store made parallel stores collide on it
+            if (!File.Exists(originFile))
+            {
+                try
+                {
+                    using (var stream = new FileStream(originFile, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
+                    using (var writer = new StreamWriter(stream))
+                    {
+                        writer.Write(origin ?? String.Empty);
+                    }
+                }
+                catch (IOException) when (File.Exists(originFile))
+                {
+                    // created by another store at the same moment
+                }
+            }
+        }
+
+        private static void TryDelete(String filePath)
+        {
+            try
+            {
+                File.Delete(filePath);
+            }
+            catch (IOException)
+            {
+            }
         }
 
         private String GetOriginPath(String origin) =>

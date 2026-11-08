@@ -1,3 +1,7 @@
+# 1.3.2
+
+- Fixed parallel stores to the persistent HTTP cache failing the page load with an `IOException` @michaelthyregod
+
 # 1.3.1
 
 Released on Sunday, November 8 2026.
