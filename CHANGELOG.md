@@ -1,5 +1,6 @@
 # 1.3.2
 
+- Fixed the cookie provider failing for good once cookies were set or read from several threads at a time, as when a page loads its resources @michaelthyregod
 - Fixed `RemoveCookies` returning no cookies and `RemoveAllCookies` not updating the cookie file @michaelthyregod
 
 # 1.3.1
