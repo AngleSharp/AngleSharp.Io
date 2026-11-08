@@ -1,5 +1,8 @@
 # 1.3.1
 
+Released on Sunday, November 8 2026.
+
+- Fixed `GetAttachedFileName` passing on folders from `Content-Disposition`; it now gives a plain file name @michaelthyregod
 - Fixed a cookie `Expires` date with a day the month does not have failing the page load @michaelthyregod
 
 # 1.3.0
