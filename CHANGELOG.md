@@ -1,13 +1,10 @@
-# 1.3.2
-
-- Fixed parallel stores to the persistent HTTP cache failing the page load with an `IOException` @michaelthyregod
-
 # 1.3.1
 
 Released on Sunday, November 8 2026.
 
 - Fixed `GetAttachedFileName` passing on folders from `Content-Disposition`; it now gives a plain file name @michaelthyregod
 - Fixed a cookie `Expires` date with a day the month does not have failing the page load @michaelthyregod
+- Fixed parallel stores to the persistent HTTP cache failing the page load with an `IOException` @michaelthyregod
 - Added trimming and Native AOT compatibility (`IsAotCompatible`) for the .NET 8 and .NET 10 targets @michaelthyregod
 
 # 1.3.0
