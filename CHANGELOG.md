@@ -1,13 +1,10 @@
-# 1.3.2
-
-- Fixed `RemoveCookies` returning no cookies and `RemoveAllCookies` not updating the cookie file @michaelthyregod
-
 # 1.3.1
 
 Released on Sunday, November 8 2026.
 
 - Fixed `GetAttachedFileName` passing on folders from `Content-Disposition`; it now gives a plain file name @michaelthyregod
 - Fixed a cookie `Expires` date with a day the month does not have failing the page load @michaelthyregod
+- Fixed `RemoveCookies` returning no cookies and `RemoveAllCookies` not updating the cookie file @michaelthyregod
 - Added trimming and Native AOT compatibility (`IsAotCompatible`) for the .NET 8 and .NET 10 targets @michaelthyregod
 
 # 1.3.0
