@@ -20,9 +20,9 @@ namespace AngleSharp.Io.Cookie
         private readonly ICookieFileHandler _handler;
         private readonly Boolean _forceParse;
         private readonly Boolean _httpOnlyExtension;
-        // cookies are read far more often than changed, and the resources of a page are loaded in
-        // parallel: a change copies the list and swaps the copy in, so readers never see a half change
-        private List<WebCookie> _cookies;
+        // the resources of a page are loaded in parallel, so the cookies are an array that is
+        // never changed in place: a change swaps in a new array, and readers keep the one they got
+        private WebCookie[] _cookies;
         private Int32 _pendingWrites;
         private Int32 _writing;
 
@@ -36,7 +36,7 @@ namespace AngleSharp.Io.Cookie
             _handler = handler;
             _forceParse = options.IsForceParse;
             _httpOnlyExtension = options.IsHttpOnlyExtension;
-            _cookies = ReadCookies();
+            _cookies = ReadCookies().ToArray();
         }
 
         String ICookieProvider.GetCookie(Url url)
@@ -138,8 +138,12 @@ namespace AngleSharp.Io.Cookie
         /// <param name="path">The path of the cookie.</param>
         /// <param name="key">The key of the cookie.</param>
         /// <returns>If matching cookie, if any.</returns>
-        public WebCookie FindCookie(String domain, String path, String key) =>
-            Find(Volatile.Read(ref _cookies), domain, path, key);
+        public WebCookie FindCookie(String domain, String path, String key)
+        {
+            var cookies = Volatile.Read(ref _cookies);
+            var index = IndexOf(cookies, domain, path, key);
+            return index >= 0 ? cookies[index] : null;
+        }
 
         /// <summary>
         /// Finds all cookies that match the given domain and optional path.
@@ -150,15 +154,7 @@ namespace AngleSharp.Io.Cookie
         public IEnumerable<WebCookie> FindCookies(String domain, String path = null)
         {
             domain = CanonicalDomain(domain);
-            var enumerable = EnumerateCookies().Where(cookie => cookie.Domain.Is(domain));
-
-            if (!String.IsNullOrEmpty(path))
-            {
-                enumerable = enumerable
-                    .Where(cookie => CheckPaths(path, cookie.Path));
-            }
-
-            return enumerable;
+            return EnumerateCookies().Where(cookie => Matches(cookie, domain, path));
         }
 
         /// <summary>
@@ -169,11 +165,7 @@ namespace AngleSharp.Io.Cookie
         {
             if (cookie != null)
             {
-                Change(cookies =>
-                {
-                    cookies.Remove(Find(cookies, cookie.Domain, cookie.Path, cookie.Key));
-                    InsertCookie(cookies, cookie);
-                });
+                Change(cookies => Insert(Without(cookies, cookie), cookie));
                 WriteCookies();
             }
         }
@@ -185,12 +177,17 @@ namespace AngleSharp.Io.Cookie
         /// <param name="newCookie">The updated cookie content.</param>
         public void UpdateCookie(WebCookie oldCookie, WebCookie newCookie)
         {
-            if (oldCookie != null)
+            if (newCookie != null)
             {
-                Change(cookies => cookies.Remove(Find(cookies, oldCookie.Domain, oldCookie.Path, oldCookie.Key)));
+                // one change, such that no reader sees the cookie missing in between
+                Change(cookies => Insert(Without(Without(cookies, oldCookie), newCookie), newCookie));
+                WriteCookies();
             }
-
-            AddCookie(newCookie);
+            else if (oldCookie != null)
+            {
+                // as before, a removal without a replacement is not written to the file
+                Change(cookies => Without(cookies, oldCookie));
+            }
         }
 
         /// <summary>
@@ -203,10 +200,12 @@ namespace AngleSharp.Io.Cookie
         public WebCookie RemoveCookie(String domain, String path, String key)
         {
             var cookie = default(WebCookie);
+
             Change(cookies =>
             {
-                cookie = Find(cookies, domain, path, key);
-                cookies.Remove(cookie);
+                var index = IndexOf(cookies, domain, path, key);
+                cookie = index >= 0 ? cookies[index] : null;
+                return index >= 0 ? RemoveAt(cookies, index) : cookies;
             });
 
             if (cookie != null)
@@ -225,16 +224,21 @@ namespace AngleSharp.Io.Cookie
         /// <returns>The removed cookies.</returns>
         public IEnumerable<WebCookie> RemoveCookies(String domain, String path = null)
         {
-            // taken before the removal, as the lazy query would find nothing afterwards
-            var cookies = FindCookies(domain, path).ToArray();
+            domain = CanonicalDomain(domain);
+            var removed = Array.Empty<WebCookie>();
 
-            if (cookies.Length > 0)
+            Change(cookies =>
             {
-                Change(list => list.RemoveAll(cookie => cookies.Contains(cookie)));
+                removed = cookies.Where(cookie => Matches(cookie, domain, path)).ToArray();
+                return removed.Length > 0 ? cookies.Where(cookie => !Matches(cookie, domain, path)).ToArray() : cookies;
+            });
+
+            if (removed.Length > 0)
+            {
                 WriteCookies();
             }
 
-            return cookies;
+            return removed;
         }
 
         /// <summary>
@@ -243,14 +247,14 @@ namespace AngleSharp.Io.Cookie
         /// <returns>The removed cookies.</returns>
         public IEnumerable<WebCookie> RemoveAllCookies()
         {
-            var cookies = Interlocked.Exchange(ref _cookies, new List<WebCookie>());
+            var cookies = Interlocked.Exchange(ref _cookies, Array.Empty<WebCookie>());
             WriteCookies();
-            return cookies.ToArray();
+            return cookies;
         }
 
         private List<WebCookie> ReadCookies() => Deserialize(_handler.ReadFile(), _forceParse, _httpOnlyExtension);
 
-        // reads the list when enumerated, not when called, such that Cookies stays a live view
+        // reads the array when enumerated, not when called, such that Cookies stays a live view
         private IEnumerable<WebCookie> EnumerateCookies()
         {
             foreach (var cookie in Volatile.Read(ref _cookies))
@@ -259,15 +263,14 @@ namespace AngleSharp.Io.Cookie
             }
         }
 
-        private void Change(Action<List<WebCookie>> change)
+        private void Change(Func<WebCookie[], WebCookie[]> change)
         {
             while (true)
             {
                 var current = Volatile.Read(ref _cookies);
-                var next = new List<WebCookie>(current);
-                change(next);
+                var next = change(current);
 
-                if (Interlocked.CompareExchange(ref _cookies, next, current) == current)
+                if (ReferenceEquals(next, current) || Interlocked.CompareExchange(ref _cookies, next, current) == current)
                 {
                     return;
                 }
@@ -278,8 +281,8 @@ namespace AngleSharp.Io.Cookie
         {
             Interlocked.Increment(ref _pendingWrites);
 
-            // one thread writes the file at a time; a change made meanwhile is written in its
-            // next round, so no thread waits for the file
+            // a single thread writes the file; a change made meanwhile only raises the counter
+            // and is written in that thread's next round, so nobody waits for the file
             while (Interlocked.CompareExchange(ref _writing, 1, 0) == 0)
             {
                 try
@@ -296,7 +299,7 @@ namespace AngleSharp.Io.Cookie
                     Volatile.Write(ref _writing, 0);
                 }
 
-                // a change made after the last round but before the release must not be lost
+                // a change raised after the last round but before the release would be lost otherwise
                 if (Volatile.Read(ref _pendingWrites) == 0)
                 {
                     break;
@@ -304,24 +307,55 @@ namespace AngleSharp.Io.Cookie
             }
         }
 
-        private static WebCookie Find(List<WebCookie> cookies, String domain, String path, String key)
+        private static Boolean Matches(WebCookie cookie, String domain, String path) =>
+            cookie.Domain.Is(domain) && (String.IsNullOrEmpty(path) || CheckPaths(path, cookie.Path));
+
+        private static Int32 IndexOf(WebCookie[] cookies, String domain, String path, String key)
         {
             domain = CanonicalDomain(domain);
-            return cookies.FirstOrDefault(cookie => cookie.Domain.Is(domain) && cookie.Path.Is(path) && cookie.Key.Is(key));
-        }
 
-        private static void InsertCookie(List<WebCookie> cookies, WebCookie cookie)
-        {
-            for (var i = 0; i < cookies.Count; i++)
+            for (var i = 0; i < cookies.Length; i++)
             {
-                if (cookie.CompareTo(cookies[i]) > 0)
+                var cookie = cookies[i];
+
+                if (cookie.Domain.Is(domain) && cookie.Path.Is(path) && cookie.Key.Is(key))
                 {
-                    cookies.Insert(i, cookie);
-                    return;
+                    return i;
                 }
             }
 
-            cookies.Add(cookie);
+            return -1;
+        }
+
+        private static WebCookie[] Without(WebCookie[] cookies, WebCookie cookie)
+        {
+            var index = cookie != null ? IndexOf(cookies, cookie.Domain, cookie.Path, cookie.Key) : -1;
+            return index >= 0 ? RemoveAt(cookies, index) : cookies;
+        }
+
+        private static WebCookie[] RemoveAt(WebCookie[] cookies, Int32 index)
+        {
+            var result = new WebCookie[cookies.Length - 1];
+            Array.Copy(cookies, 0, result, 0, index);
+            Array.Copy(cookies, index + 1, result, index, result.Length - index);
+            return result;
+        }
+
+        // keeps the order of the former list: before the first cookie it compares greater than
+        private static WebCookie[] Insert(WebCookie[] cookies, WebCookie cookie)
+        {
+            var index = 0;
+
+            while (index < cookies.Length && cookie.CompareTo(cookies[index]) <= 0)
+            {
+                index++;
+            }
+
+            var result = new WebCookie[cookies.Length + 1];
+            Array.Copy(cookies, 0, result, 0, index);
+            result[index] = cookie;
+            Array.Copy(cookies, index, result, index + 1, cookies.Length - index);
+            return result;
         }
     }
 }
