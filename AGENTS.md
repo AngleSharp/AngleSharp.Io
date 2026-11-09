@@ -34,6 +34,11 @@ dotnet test src/AngleSharp.Io.Tests/AngleSharp.Io.Tests.csproj -f net8.0 --filte
   not from a csproj property. Release-worthy changes get a `CHANGELOG.md` line.
 - `RunUnitTests` runs the suite twice, differing only in a `prefetched` environment variable
   that nothing in this repo currently reads — a single run is equivalent locally.
+- The AngleSharp dependency defaults to `1.10.0` (`AngleSharpVersion` in the csproj, also passed by CI)
+  and allows versions below `2.0.0`.
+- The `net8.0` and `net10.0` targets set `IsAotCompatible`, so a trim or AOT analyzer warning breaks
+  the build. Avoid reflection over runtime types; the analyzers only see this assembly, so publishing a
+  small `PublishAot` console app against it is the end-to-end check.
 - There is no `global.json`; the bootstrap scripts use the STS channel, CI installs 10.0.x.
 
 ## Architecture

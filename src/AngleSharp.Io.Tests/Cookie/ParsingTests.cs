@@ -449,6 +449,52 @@ namespace AngleSharp.Io.Tests.Cookie
             StringAssert.DoesNotContain("k=v", reloaded.GetCookie(new Url("https://evil.example/")));
         }
 
+        [Test]
+        public void ExpiresWithDayOutsideTheMonthIsIgnored()
+        {
+            var container = CreateContainerWithSetup(c =>
+            {
+                c.SetCookie(new Url("http://example.com/"), "a=b; Expires=Wed, 31 Feb 2030 10:00:00 GMT");
+            });
+
+            var cookie = container.Cookies.Single();
+            Assert.AreEqual("b", cookie.Value);
+            Assert.IsFalse(cookie.IsPersistent);
+        }
+
+        [Test]
+        public void RemoveCookiesReturnsTheRemovedCookies()
+        {
+            var container = CreateContainerWithSetup(c =>
+            {
+                for (var i = 0; i < 5; i++)
+                {
+                    c.SetCookie(new Url("https://example.com/"), $"c{i}=v; Max-Age=1000");
+                }
+
+                c.SetCookie(new Url("https://other.example/"), "d=v; Max-Age=1000");
+            });
+
+            var removed = container.RemoveCookies("example.com").ToArray();
+
+            Assert.AreEqual(5, removed.Length);
+            Assert.AreEqual("other.example", container.Cookies.Single().Domain);
+        }
+
+        [Test]
+        public void RemoveAllCookiesEmptiesTheCookieFile()
+        {
+            var handler = new MemoryFileHandler();
+            var container = new AdvancedCookieProvider(handler);
+            ((ICookieProvider)container).SetCookie(new Url("https://example.com/"), "a=b; Max-Age=1000");
+
+            var removed = container.RemoveAllCookies().ToArray();
+            var reloaded = new AdvancedCookieProvider(handler);
+
+            Assert.AreEqual(1, removed.Length);
+            Assert.IsEmpty(reloaded.Cookies);
+        }
+
         private static AdvancedCookieProvider CreateContainerWithSetup(Action<ICookieProvider> setup)
         {
             var container = new AdvancedCookieProvider(new MemoryFileHandler());

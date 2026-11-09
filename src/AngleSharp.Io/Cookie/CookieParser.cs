@@ -334,8 +334,15 @@ namespace AngleSharp.Io.Cookie
                 return false;
             }
 
+            // checked before constructing, as the constructor throws for a day the month does not have
+            if (year <= 1600 || dayOfMonth < 1 || dayOfMonth > DateTime.DaysInMonth(year.Value, month.Value) || time[0] > 23 || time[1] > 59 || time[2] > 59)
+            {
+                dateTime = DateTime.UtcNow;
+                return false;
+            }
+
             dateTime = new DateTime(year.Value, month.Value, dayOfMonth.Value, time[0], time[1], time[2], DateTimeKind.Utc);
-            return dayOfMonth > 0 && dayOfMonth < 32 && year > 1600 && time[0] < 24 && time[1] < 60 && time[2] < 60;
+            return true;
         }
 
         private Boolean TryParseMonth(Int32 end, out Int32 month)

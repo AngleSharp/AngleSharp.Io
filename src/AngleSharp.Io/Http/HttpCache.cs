@@ -20,6 +20,10 @@ namespace AngleSharp.Io.Http
 
         private readonly HttpCacheOptions _options;
 
+        // pages load their resources in parallel; the writes of one origin run one after
+        // another, such that handlers never have to deal with parallel writes
+        private readonly WriteQueue _writes = new WriteQueue();
+
         #endregion
 
         #region ctor
@@ -176,7 +180,7 @@ namespace AngleSharp.Io.Http
 
             if (variants.Count > 0)
             {
-                await Handler.WriteAsync(origin, key, null, cancel).ConfigureAwait(false);
+                await WriteAsync(origin, key, null, cancel).ConfigureAwait(false);
                 return true;
             }
 
@@ -188,7 +192,7 @@ namespace AngleSharp.Io.Http
         {
             foreach (var key in Handler.GetKeys(origin).ToArray())
             {
-                await Handler.WriteAsync(origin, key, null, cancel).ConfigureAwait(false);
+                await WriteAsync(origin, key, null, cancel).ConfigureAwait(false);
             }
         }
 
@@ -281,8 +285,11 @@ namespace AngleSharp.Io.Http
         {
             // the new entry replaces all variants the request would have selected
             var remaining = variants.Where(m => !HttpCachePolicy.MatchesVary(m, request));
-            return Handler.WriteAsync(origin, key, remaining.Concat(new[] { entry }).ToArray(), cancel);
+            return WriteAsync(origin, key, remaining.Concat(new[] { entry }).ToArray(), cancel);
         }
+
+        private Task WriteAsync(String origin, String key, IEnumerable<HttpCacheEntry> entries, CancellationToken cancel) =>
+            _writes.RunAsync(origin, () => Handler.WriteAsync(origin, key, entries, cancel));
 
         private async Task InvalidateAsync(Url address, IResponse response, CancellationToken cancel)
         {
