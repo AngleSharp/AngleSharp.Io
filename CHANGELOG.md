@@ -6,6 +6,7 @@ Released on Sunday, November 8 2026.
 - Fixed a cookie `Expires` date with a day the month does not have failing the page load @michaelthyregod
 - Fixed the cookie provider failing for good once cookies were set or read from several threads at a time, as when a page loads its resources @michaelthyregod
 - Fixed `RemoveCookies` returning no cookies and `RemoveAllCookies` not updating the cookie file @michaelthyregod
+- Fixed parallel stores to the persistent HTTP cache failing the page load with an `IOException` @michaelthyregod
 - Added trimming and Native AOT compatibility (`IsAotCompatible`) for the .NET 8 and .NET 10 targets @michaelthyregod
 
 # 1.3.0
