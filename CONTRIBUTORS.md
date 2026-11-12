@@ -6,6 +6,7 @@ AngleSharp.Io contains code written by (in order of first pull request / commit)
 
 * [Florian Rappl](https://github.com/FlorianRappl)
 * [Joel Verhagen](https://github.com/joelverhagen)
+* [Michael Thyregod](https://github.com/michaelthyregod)
 
 Without these awesome people AngleSharp.Io could not exist. Thanks to everyone for your contributions! :beers:
 
