@@ -1,3 +1,9 @@
+# 1.3.2
+
+Released on Friday, November 13 2026.
+
+- Fixed `fetch`, `XMLHttpRequest` and `sendBeacon` sending the `Accept` header of a navigation (`text/html,...`), so that servers choosing by it answered with their web page instead of the data; it is `*/*` unless the script sets one
+
 # 1.3.1
 
 Released on Sunday, November 8 2026.

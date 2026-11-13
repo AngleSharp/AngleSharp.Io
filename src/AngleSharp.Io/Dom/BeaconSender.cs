@@ -301,6 +301,7 @@ namespace AngleSharp.Io.Dom
                     Referer = Referer,
                 };
 
+                request.Headers[HeaderNames.Accept] = "*/*";
                 request.Headers[HeaderNames.Origin] = Origin;
 
                 if (ContentType is not null)

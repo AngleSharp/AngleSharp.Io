@@ -292,6 +292,18 @@ namespace AngleSharp.Io.Tests.Beacon
         }
 
         [Test]
+        public async Task BeaconsAcceptAnyType()
+        {
+            var server = new CorsServer();
+            var navigator = await server.OpenNavigatorAsync("https://beacon.example/").ConfigureAwait(false);
+
+            Assert.IsTrue(navigator.SendBeacon("/collect", "data"));
+            await WaitForAsync(() => server.Requests.Count == 1).ConfigureAwait(false);
+
+            Assert.AreEqual("*/*", server.Requests[0].Headers[HeaderNames.Accept]);
+        }
+
+        [Test]
         public async Task PreflightIsSentWithoutCredentialsAndTheBeaconWithThem()
         {
             var server = new CorsServer();
