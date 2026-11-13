@@ -272,6 +272,10 @@ namespace AngleSharp.Io.Dom
                 Referer = window.Document?.DocumentUri,
             };
 
+            // not the documents a navigation asks for: servers answering by Accept would give
+            // their web page instead of the data (fetch takes any type unless the script says so)
+            request.Headers[HeaderNames.Accept] = "*/*";
+
             if (requestOptions.Headers != null)
             {
                 foreach (var pair in requestOptions.Headers.Pairs)

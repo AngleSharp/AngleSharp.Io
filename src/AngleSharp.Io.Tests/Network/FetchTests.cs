@@ -59,6 +59,38 @@ namespace AngleSharp.Io.Tests.Network
         }
 
         [Test]
+        public async Task FetchShouldAcceptAnyTypeByDefault()
+        {
+            var loader = new TestDocumentLoader(request =>
+                new TestDownload(Task.FromResult<IResponse>(CreateResponse("https://example.org/api", "{}"))));
+
+            var window = await OpenWindowAsync(loader, "https://example.org/base/page").ConfigureAwait(false);
+            await window.FetchAsync("/api").ConfigureAwait(false);
+
+            Assert.AreEqual("*/*", loader.LastRequest.Headers[HeaderNames.Accept]);
+        }
+
+        [Test]
+        public async Task FetchShouldSendTheAcceptHeaderOfTheScript()
+        {
+            var loader = new TestDocumentLoader(request =>
+                new TestDownload(Task.FromResult<IResponse>(CreateResponse("https://example.org/api", "{}"))));
+
+            var window = await OpenWindowAsync(loader, "https://example.org/base/page").ConfigureAwait(false);
+            var options = new FetchOptions
+            {
+                Headers = new Dictionary<String, String>
+                {
+                    ["accept"] = "application/json"
+                },
+            };
+
+            await window.FetchAsync("/api", options).ConfigureAwait(false);
+
+            Assert.AreEqual("application/json", loader.LastRequest.Headers[HeaderNames.Accept]);
+        }
+
+        [Test]
         public async Task FetchShouldSetMultipartContentTypeForFormDataWhenMissing()
         {
             var loader = new TestDocumentLoader(request =>

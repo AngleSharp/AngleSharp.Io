@@ -269,6 +269,9 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
                     Referer = _window.Document.DocumentUri,
                 };
 
+                // any type, not the documents of a navigation, unless set by the script
+                request.Headers[HeaderNames.Accept] = "*/*";
+
                 foreach (var header in _headers)
                 {
                     request.Headers[header.Key] = header.Value;

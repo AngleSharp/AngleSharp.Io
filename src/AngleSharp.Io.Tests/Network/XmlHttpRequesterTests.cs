@@ -46,6 +46,31 @@ namespace AngleSharp.Io.Tests.Network
             }
         }
 
+        [TestCase(null, "*/*")]
+        [TestCase("application/json", "application/json")]
+        public async Task SendShouldAcceptAnyTypeUnlessSetByTheScript(String accept, String expected)
+        {
+            var loader = new TestDocumentLoader(request =>
+            {
+                var response = CreateResponse("https://api.example.test/endpoint", "{}", HttpStatusCode.OK);
+                return new TestDownload(request.Target, Task.FromResult<IResponse>(response));
+            });
+
+            var xhr = await CreateRequesterAsync(loader, "https://origin.example.test/").ConfigureAwait(false);
+            xhr.Open("GET", "https://api.example.test/endpoint");
+
+            if (accept != null)
+            {
+                xhr.SetRequestHeader("Accept", accept);
+            }
+
+            xhr.Send();
+
+            await WaitForReadyStateAsync(xhr, RequesterState.Done).ConfigureAwait(false);
+
+            Assert.AreEqual(expected, loader.LastRequest.Headers[HeaderNames.Accept]);
+        }
+
         [Test]
         public async Task SendWithFormDataShouldSetMultipartContentTypeWhenMissing()
         {
