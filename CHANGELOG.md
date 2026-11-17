@@ -1,3 +1,9 @@
+# 1.3.3
+
+Released on Tuesday, November 17 2026.
+
+- Fixed `XMLHttpRequest` changing its `readyState` before the `readystatechange` of the previous state was fired
+
 # 1.3.2
 
 Released on Friday, November 13 2026.

@@ -74,6 +74,39 @@ namespace AngleSharp.Io.Tests.Dom
         }
 
         [Test]
+        public async Task ReadyStateChangesWithTheEventsOfAQueuingEventLoop()
+        {
+            var response = CreateResponse("https://api.example.test/data", "hello world", HttpStatusCode.OK);
+            var loader = new TestDocumentLoader(request => new TestDownload(request.Target, Task.FromResult<IResponse>(response)));
+            var loop = new QueuingEventLoop();
+            var xhr = await CreateRequesterAsync(loader, loop).ConfigureAwait(false);
+            var recorder = new EventRecorder(xhr);
+
+            xhr.Open("GET", "https://api.example.test/data");
+            xhr.Send();
+
+            //  the response arrives completely before the loop runs any of its tasks
+            await Task.Delay(200).ConfigureAwait(false);
+            Assert.AreEqual(RequesterState.Opened, xhr.ReadyState);
+            loop.RunQueued();
+            await recorder.WaitForLoadEnd().ConfigureAwait(false);
+
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    "readystatechange:1",
+                    "loadstart",
+                    "readystatechange:2",
+                    "readystatechange:3",
+                    "progress",
+                    "readystatechange:4",
+                    "load",
+                    "loadend",
+                },
+                recorder.Names);
+        }
+
+        [Test]
         public async Task LoadEventCarriesLoadedAndTotalFromContentLength()
         {
             var response = CreateResponse("https://api.example.test/data", "hello world", HttpStatusCode.OK);
@@ -294,11 +327,11 @@ namespace AngleSharp.Io.Tests.Dom
 
         #region Helpers
 
-        private static async Task<XmlHttpRequest> CreateRequesterAsync(IDocumentLoader loader)
+        private static async Task<XmlHttpRequest> CreateRequesterAsync(IDocumentLoader loader, IEventLoop loop = null)
         {
             var config = Configuration.Default
                 .WithOnly<IDocumentLoader>(_ => loader)
-                .WithOnly<IEventLoop>(_ => new ImmediateEventLoop());
+                .WithOnly<IEventLoop>(_ => loop ?? new ImmediateEventLoop());
 
             var context = BrowsingContext.New(config);
             var document = await context.OpenAsync(req => req.Address("https://origin.example.test/").Content("<!doctype html>")).ConfigureAwait(false);
@@ -547,6 +580,49 @@ namespace AngleSharp.Io.Tests.Dom
             {
                 action(CancellationToken.None);
                 return new CompletedCancellable();
+            }
+
+            public void CancelAll()
+            {
+            }
+
+            public void Spin()
+            {
+            }
+        }
+
+        private sealed class QueuingEventLoop : IEventLoop
+        {
+            private readonly Queue<Action<CancellationToken>> _queue = new Queue<Action<CancellationToken>>();
+
+            public ICancellable Enqueue(Action<CancellationToken> action, TaskPriority priority)
+            {
+                lock (_queue)
+                {
+                    _queue.Enqueue(action);
+                }
+
+                return new CompletedCancellable();
+            }
+
+            public void RunQueued()
+            {
+                while (true)
+                {
+                    Action<CancellationToken> action;
+
+                    lock (_queue)
+                    {
+                        if (_queue.Count == 0)
+                        {
+                            return;
+                        }
+
+                        action = _queue.Dequeue();
+                    }
+
+                    action(CancellationToken.None);
+                }
             }
 
             public void CancelAll()
