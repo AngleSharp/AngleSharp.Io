@@ -110,6 +110,31 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>
+    /// Changes the state as the response arrives: in the task that tells the script about it,
+    /// so that each readystatechange listener sees the state it is fired for (with the changes
+    /// made right away, a listener of headers received already saw the request done, and a
+    /// script loading something on readyState 4 loaded it four times, e.g. Lottie's animations).
+    /// </summary>
+    private void ChangeReadyState(RequesterState value)
+    {
+        if (!_async || GetEventLoop() is null)
+        {
+            ReadyState = value;
+            return;
+        }
+
+        Enqueue(() =>
+        {
+            // an abort meanwhile is the last change
+            if (!_aborted)
+            {
+                _readyState = value;
+                Dispatch(new Event(ReadyStateChangeEvent));
+            }
+        });
+    }
+
+    /// <summary>
     /// Gets or sets the timeout of the request in milliseconds.
     /// </summary>
     [DomName("timeout")]
@@ -187,7 +212,8 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     [DomName("abort")]
     public void Abort()
     {
-        if (_readyState == RequesterState.HeadersReceived || _readyState == RequesterState.Loading)
+        // a response may be on its way already, which the script does not know of yet
+        if (_readyState == RequesterState.HeadersReceived || _readyState == RequesterState.Loading || (_readyState == RequesterState.Opened && _download != null))
         {
             _aborted = true;
             _download?.Cancel();
@@ -390,13 +416,13 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
 
                     _responseUrl = response.Address.Href;
                     _responseStatus = response.StatusCode;
-                    ReadyState = RequesterState.HeadersReceived;
+                    ChangeReadyState(RequesterState.HeadersReceived);
                     await ReadBody(response.Content).ConfigureAwait(false);
 
                     if (!_aborted)
                     {
                         FinishUpload(LoadEvent);
-                        ReadyState = RequesterState.Done;
+                        ChangeReadyState(RequesterState.Done);
                         FireProgress(LoadEvent);
                         FireProgress(LoadEndEvent);
                     }
@@ -420,7 +446,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     private async Task ReadBody(Stream content)
     {
         SetResponseTotal();
-        ReadyState = RequesterState.Loading;
+        ChangeReadyState(RequesterState.Loading);
 
         var encoding = GetResponseEncoding();
         var decoder = encoding.GetDecoder();
@@ -478,7 +504,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         if (!_aborted)
         {
             FinishUpload(eventName);
-            ReadyState = RequesterState.Done;
+            ChangeReadyState(RequesterState.Done);
             FireProgress(eventName);
             FireProgress(LoadEndEvent);
         }
