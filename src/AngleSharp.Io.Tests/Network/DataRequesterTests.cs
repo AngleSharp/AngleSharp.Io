@@ -115,5 +115,25 @@
                 Assert.AreEqual("image/png", response.Headers[HeaderNames.ContentType]);
             }
         }
+
+        [Test]
+        public async Task DataGetRequestForPercentEncodedBase64IsDecoded()
+        {
+            // as Acid2 has its images: "/" and "=" percent-encoded within the base64 body
+            var http = new DataRequester();
+            var request = new Request
+            {
+                Address = new Url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR42mP4%2F58BAAT%2FAf9jgNErAAAAAElFTkSuQmCC"),
+                Method = HttpMethod.Get,
+            };
+
+            using (var response = await http.RequestAsync(request, CancellationToken.None))
+            {
+                Assert.AreEqual(200, (int)response.StatusCode);
+                var bytes = new MemoryStream();
+                response.Content.CopyTo(bytes);
+                Assert.AreEqual(new Byte[] { 0x89, 0x50, 0x4E, 0x47 }, bytes.ToArray()[..4]);
+            }
+        }
     }
 }

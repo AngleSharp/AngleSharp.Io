@@ -1,3 +1,9 @@
+# 1.3.4
+
+Released on tbd.
+
+- Fixed `data:` URLs whose base64 is percent-encoded (e.g. `%2F` for `/`) failing to load
+
 # 1.3.3
 
 Released on Tuesday, November 17 2026.
