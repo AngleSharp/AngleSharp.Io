@@ -1,9 +1,26 @@
 namespace AngleSharp.Io.Dom
 {
     using AngleSharp.Attributes;
+    using AngleSharp.Browser;
+    using AngleSharp.Dom;
     using AngleSharp.Io.PermissionsApi;
     using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
+
+    /// <summary>
+    /// The callback receiving a position.
+    /// </summary>
+    /// <param name="position">The position.</param>
+    [DomName("PositionCallback")]
+    public delegate void PositionCallback(GeolocationPosition position);
+
+    /// <summary>
+    /// The callback receiving the error of a position request.
+    /// </summary>
+    /// <param name="error">The error.</param>
+    [DomName("PositionErrorCallback")]
+    public delegate void PositionErrorCallback(GeolocationPositionError error);
 
     /// <summary>
     /// Represents the Geolocation API.
@@ -13,6 +30,8 @@ namespace AngleSharp.Io.Dom
     {
         private readonly IGeolocationPlatform _platform;
         private readonly Permissions _permissions;
+        private readonly HashSet<Int32> _watches = new HashSet<Int32>();
+        private Int32 _nextWatchId;
 
         /// <summary>
         /// Creates a new geolocation wrapper using the provided platform implementation.
@@ -60,6 +79,95 @@ namespace AngleSharp.Io.Dom
 
             var reading = await _platform.GetCurrentPositionAsync(options ?? new GeolocationOptions()).ConfigureAwait(false);
             return GeolocationPosition.FromReading(reading ?? GeolocationReading.Empty);
+        }
+
+        /// <summary>
+        /// Gets the current position, which is given to the success callback, or the
+        /// error to the error callback.
+        /// </summary>
+        /// <param name="success">The callback receiving the position.</param>
+        /// <param name="error">The callback receiving the error, if any.</param>
+        /// <param name="options">The position request options.</param>
+        [DomName("getCurrentPosition")]
+        public void GetCurrentPosition(PositionCallback success, PositionErrorCallback error = null, GeolocationOptions options = null)
+        {
+            Report(success, error, options, () => true).Forget();
+        }
+
+        /// <summary>
+        /// Watches the position, which is given to the success callback (or the error
+        /// to the error callback) until the watch is cleared. The platform only gives the
+        /// current position, so it is reported once.
+        /// </summary>
+        /// <param name="success">The callback receiving the position.</param>
+        /// <param name="error">The callback receiving the error, if any.</param>
+        /// <param name="options">The position request options.</param>
+        /// <returns>The id of the watch.</returns>
+        [DomName("watchPosition")]
+        public Int32 WatchPosition(PositionCallback success, PositionErrorCallback error = null, GeolocationOptions options = null)
+        {
+            var id = ++_nextWatchId;
+            _watches.Add(id);
+            Report(success, error, options, () => _watches.Contains(id)).Forget();
+            return id;
+        }
+
+        /// <summary>
+        /// Clears the watch with the given id.
+        /// </summary>
+        /// <param name="watchId">The id of the watch.</param>
+        [DomName("clearWatch")]
+        public void ClearWatch(Int32 watchId)
+        {
+            _watches.Remove(watchId);
+        }
+
+        /// <summary>
+        /// Gets or sets the event loop the callbacks run on.
+        /// </summary>
+        internal IEventLoop Loop { get; set; }
+
+        private async Task Report(PositionCallback success, PositionErrorCallback error, GeolocationOptions options, Func<Boolean> isWanted)
+        {
+            Action report;
+
+            try
+            {
+                var position = await GetCurrentPosition(options).ConfigureAwait(false);
+                report = () => success?.Invoke(position);
+            }
+            catch (DomException ex) when (ex.Name == Permissions.NotAllowedError)
+            {
+                var positionError = new GeolocationPositionError(GeolocationPositionErrorCode.PermissionDenied, "User denied Geolocation");
+                report = () => error?.Invoke(positionError);
+            }
+            catch (TimeoutException ex)
+            {
+                var positionError = new GeolocationPositionError(GeolocationPositionErrorCode.Timeout, ex.Message);
+                report = () => error?.Invoke(positionError);
+            }
+            catch (Exception ex)
+            {
+                var positionError = new GeolocationPositionError(GeolocationPositionErrorCode.PositionUnavailable, ex.Message);
+                report = () => error?.Invoke(positionError);
+            }
+
+            void Run()
+            {
+                if (isWanted.Invoke())
+                {
+                    report.Invoke();
+                }
+            }
+
+            if (Loop != null)
+            {
+                Loop.Enqueue(Run);
+            }
+            else
+            {
+                Run();
+            }
         }
     }
 
@@ -183,6 +291,54 @@ namespace AngleSharp.Io.Dom
 
             return new GeolocationPosition(coordinates, timestamp);
         }
+    }
+
+    /// <summary>
+    /// The codes of a geolocation error.
+    /// </summary>
+    [DomName("GeolocationPositionError")]
+    public enum GeolocationPositionErrorCode : ushort
+    {
+        /// <summary>
+        /// The permission to get the position was not given.
+        /// </summary>
+        [DomName("PERMISSION_DENIED")]
+        PermissionDenied = 1,
+        /// <summary>
+        /// The position could not be determined.
+        /// </summary>
+        [DomName("POSITION_UNAVAILABLE")]
+        PositionUnavailable = 2,
+        /// <summary>
+        /// The position was not determined in time.
+        /// </summary>
+        [DomName("TIMEOUT")]
+        Timeout = 3,
+    }
+
+    /// <summary>
+    /// Represents the error of a position request.
+    /// </summary>
+    [DomName("GeolocationPositionError")]
+    public sealed class GeolocationPositionError
+    {
+        internal GeolocationPositionError(GeolocationPositionErrorCode code, String message)
+        {
+            Code = code;
+            Message = message ?? String.Empty;
+        }
+
+        /// <summary>
+        /// Gets the code of the error.
+        /// </summary>
+        [DomName("code")]
+        public GeolocationPositionErrorCode Code { get; }
+
+        /// <summary>
+        /// Gets the message of the error.
+        /// </summary>
+        [DomName("message")]
+        public String Message { get; }
     }
 
     /// <summary>
