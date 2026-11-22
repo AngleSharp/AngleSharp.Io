@@ -1,8 +1,9 @@
-# 1.3.4
+# 1.4.0
 
 Released on tbd.
 
 - Fixed `data:` URLs whose base64 is percent-encoded (e.g. `%2F` for `/`) failing to load
+- Added the values of form-associated custom elements to `FormData`
 
 # 1.3.3
 

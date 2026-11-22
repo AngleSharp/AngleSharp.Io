@@ -7,6 +7,7 @@ namespace AngleSharp.Io.Dom
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Reflection; // Remove once AngleSharp 1.11 is out (min version)
 
     /// <summary>
     /// The entries of a form (or set by script) to send with fetch or
@@ -29,6 +30,31 @@ namespace AngleSharp.Io.Dom
                 foreach (var element in form.Elements)
                 {
                     AddEntries(element);
+                }
+
+                AddCustomElementEntries(form);
+            }
+        }
+
+        // ElementInternals.GetSubmissionValue of AngleSharp (since 1.10.6), if there
+        private static readonly MethodInfo GetSubmissionValue = Type.GetType("AngleSharp.Html.Dom.ElementInternals, AngleSharp")?
+            .GetMethod("GetSubmissionValue", new[] { typeof(IElement), typeof(IHtmlFormElement) });
+
+        /// <summary>
+        /// Adds what the form-associated custom elements of the form submit (their internals' value).
+        /// </summary>
+        private void AddCustomElementEntries(IHtmlFormElement form)
+        {
+            if (GetSubmissionValue is null || form.Owner is not { } document)
+            {
+                return;
+            }
+
+            foreach (var element in document.QuerySelectorAll("[name]"))
+            {
+                if (element.LocalName.IndexOf('-') >= 0 && GetSubmissionValue.Invoke(null, new Object[] { element, form }) is String value)
+                {
+                    Append(element.GetAttribute(AttributeNames.Name), value);
                 }
             }
         }
