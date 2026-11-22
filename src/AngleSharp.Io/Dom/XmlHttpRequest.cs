@@ -5,6 +5,8 @@ using AngleSharp.Browser;
 using AngleSharp.Dom;
 using AngleSharp.Dom.Events;
 using AngleSharp.Html;
+using AngleSharp.Io;
+using AngleSharp.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -41,6 +43,10 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     private HttpStatusCode _responseStatus;
     private String _responseUrl;
     private String _responseText;
+    private XmlHttpRequestResponseType _responseType;
+    private Byte[] _responseBytes;
+    private Object _responseObject;
+    private Boolean _hasResponseObject;
     private IDownload _download;
     private Boolean _aborted;
     private Int64 _loaded;
@@ -161,10 +167,23 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     }
 
     /// <summary>
-    /// Gets the determined response type.
+    /// Gets or sets the type of the response, which can only be changed before
+    /// the response is loading.
     /// </summary>
     [DomName("responseType")]
-    public XmlHttpRequestResponseType ResponseType => XmlHttpRequestResponseType.None;
+    public XmlHttpRequestResponseType ResponseType
+    {
+        get => _responseType;
+        set
+        {
+            if (_readyState == RequesterState.Loading || _readyState == RequesterState.Done)
+            {
+                throw new DomException(DomError.InvalidState);
+            }
+
+            _responseType = value;
+        }
+    }
 
     /// <summary>
     /// Gets the url of the response.
@@ -185,22 +204,74 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     public String StatusText => StatusCode != 0 ? _responseStatus.ToString() : String.Empty;
 
     /// <summary>
-    /// Gets the resulting response object.
+    /// Gets the response in the form of the response type: the text (also while
+    /// loading), or once done the parsed JSON, the bytes (an ArrayBuffer for scripts),
+    /// a blob or the document.
     /// </summary>
     [DomName("response")]
-    public Object Response => null;
+    public Object Response
+    {
+        get
+        {
+            if (_responseType == XmlHttpRequestResponseType.None || _responseType == XmlHttpRequestResponseType.Text)
+            {
+                return ResponseText;
+            }
+
+            if (_readyState != RequesterState.Done)
+            {
+                return null;
+            }
+
+            if (!_hasResponseObject)
+            {
+                _hasResponseObject = true;
+                _responseObject = CreateResponseObject();
+            }
+
+            return _responseObject;
+        }
+    }
 
     /// <summary>
     /// Gets the body text of the response, which grows while the response is loading.
     /// </summary>
     [DomName("responseText")]
-    public String ResponseText => _responseText;
+    public String ResponseText
+    {
+        get
+        {
+            if (_responseType != XmlHttpRequestResponseType.None && _responseType != XmlHttpRequestResponseType.Text)
+            {
+                throw new DomException(DomError.InvalidState);
+            }
+
+            return _readyState == RequesterState.Loading || _readyState == RequesterState.Done ? _responseText : String.Empty;
+        }
+    }
 
     /// <summary>
-    /// Gets the XML document of the response, if any.
+    /// Gets the document of the response: for an XML response, or for an HTML
+    /// one with the response type document.
     /// </summary>
     [DomName("responseXML")]
-    public IDocument ResponseXml => null;
+    public IDocument ResponseXml
+    {
+        get
+        {
+            if (_responseType != XmlHttpRequestResponseType.None && _responseType != XmlHttpRequestResponseType.Document)
+            {
+                throw new DomException(DomError.InvalidState);
+            }
+
+            if (_readyState != RequesterState.Done)
+            {
+                return null;
+            }
+
+            return _responseType == XmlHttpRequestResponseType.Document ? Response as IDocument : GetDocument();
+        }
+    }
 
     #endregion
 
@@ -245,6 +316,10 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
             }
 
             _url = new Url(new Url(_window.Document.Url), url);
+            _responseText = String.Empty;
+            _responseBytes = null;
+            _responseObject = null;
+            _hasResponseObject = false;
             _async = async;
             _url.UserName = username;
             _url.Password = password;
@@ -455,6 +530,8 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         var chars = new Char[encoding.GetMaxCharCount(BufferSize)];
         var sawFirst = false;
         var lastProgress = DateTime.UtcNow;
+        var keepsBytes = _responseType == XmlHttpRequestResponseType.ArrayBuffer || _responseType == XmlHttpRequestResponseType.Blob;
+        var bytes = keepsBytes ? new MemoryStream() : null;
 
         if (content != null)
         {
@@ -478,6 +555,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
 
                 sawFirst = true;
                 _loaded += count;
+                bytes?.Write(buffer, 0, count);
                 var written = decoder.GetChars(buffer, offset, count - offset, chars, 0);
                 text.Append(chars, 0, written);
                 var now = DateTime.UtcNow;
@@ -492,12 +570,92 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         }
 
         _responseText = text.ToString();
+        _responseBytes = bytes?.ToArray();
 
         if (!_aborted)
         {
             FireProgress(ProgressEvent);
         }
     }
+
+    private Object CreateResponseObject()
+    {
+        switch (_responseType)
+        {
+            case XmlHttpRequestResponseType.ArrayBuffer:
+                return _responseBytes ?? Array.Empty<Byte>();
+            case XmlHttpRequestResponseType.Blob:
+                return new Blob(_responseBytes ?? Array.Empty<Byte>(), GetResponseMimeType() ?? String.Empty);
+            case XmlHttpRequestResponseType.Json:
+                try
+                {
+                    return JsonReader.Parse(_responseText);
+                }
+                catch
+                {
+                    return null;
+                }
+            case XmlHttpRequestResponseType.Document:
+                return CreateDocument(htmlAllowed: true);
+            default:
+                return null;
+        }
+    }
+
+    private IDocument GetDocument()
+    {
+        //  without a response type only XML documents are parsed, once
+        if (!_hasResponseObject)
+        {
+            _hasResponseObject = true;
+            _responseObject = CreateDocument(htmlAllowed: false);
+        }
+
+        return _responseObject as IDocument;
+    }
+
+    private IDocument CreateDocument(Boolean htmlAllowed)
+    {
+        var mimeType = GetResponseMimeType() ?? MimeTypeNames.Xml;
+        var type = new MimeType(mimeType);
+        var isHtml = type.Content.Isi(MimeTypeNames.Html);
+        var isXml = type.Content.Isi(MimeTypeNames.Xml) || type.Content.Isi(MimeTypeNames.ApplicationXml) || type.Content.EndsWith("+xml", StringComparison.OrdinalIgnoreCase);
+        var context = _window?.Document?.Context;
+        var factory = context?.GetService<IDocumentFactory>();
+
+        if (factory == null || _responseText.Length == 0 || !(isXml || isHtml && htmlAllowed))
+        {
+            return null;
+        }
+
+        using (var content = new MemoryStream(Encoding.UTF8.GetBytes(_responseText)))
+        {
+            var response = new DefaultResponse
+            {
+                Address = new Url(_responseUrl.Length > 0 ? _responseUrl : _window.Document.Url),
+                Content = content,
+                StatusCode = _responseStatus,
+                Headers = new Dictionary<String, String>
+                {
+                    { HeaderNames.ContentType, $"{type.Content}; charset=utf-8" },
+                },
+            };
+
+            try
+            {
+                //  the document is just data: it neither replaces the page, nor runs anything
+                var options = new CreateDocumentOptions(response) { IsNavigationDisabled = true, IsScriptingDisabled = true };
+                return factory.CreateAsync(context, options, default).Result;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
+    private String GetResponseMimeType() =>
+        _mime ?? (_headers.TryGetValue(HeaderNames.ContentType, out var value) ? value : null);
 
     private void Fail(String eventName)
     {

@@ -324,6 +324,81 @@ namespace AngleSharp.Io.Tests.Network
             Assert.IsTrue(String.IsNullOrEmpty(xhr.ResponseText));
         }
 
+        [Test]
+        public async Task ResponseTypeArrayBufferGivesTheBytes()
+        {
+            var xhr = await SendAsync("abc", "text/plain", XmlHttpRequestResponseType.ArrayBuffer).ConfigureAwait(false);
+
+            CollectionAssert.AreEqual(Encoding.UTF8.GetBytes("abc"), (Byte[])xhr.Response);
+            Assert.Throws<DomException>(() => _ = xhr.ResponseText);
+        }
+
+        [Test]
+        public async Task ResponseTypeBlobGivesABlobOfTheContentType()
+        {
+            var xhr = await SendAsync("abc", "text/plain", XmlHttpRequestResponseType.Blob).ConfigureAwait(false);
+            var blob = (Blob)xhr.Response;
+
+            Assert.AreEqual(3, blob.Length);
+            Assert.AreEqual("text/plain", blob.Type);
+        }
+
+        [Test]
+        public async Task ResponseTypeJsonGivesTheParsedValue()
+        {
+            var xhr = await SendAsync("{\"a\":[1,2]}", "application/json", XmlHttpRequestResponseType.Json).ConfigureAwait(false);
+            var value = (IDictionary<String, Object>)xhr.Response;
+
+            Assert.AreEqual(2, ((Object[])value["a"]).Length);
+        }
+
+        [Test]
+        public async Task ResponseTypeDocumentGivesTheHtmlDocument()
+        {
+            var xhr = await SendAsync("<title>&amp;&amp;&lt;</title><p>x", "text/html", XmlHttpRequestResponseType.Document).ConfigureAwait(false);
+            var document = (IDocument)xhr.Response;
+
+            Assert.AreEqual("&&<", document.Title);
+            Assert.AreSame(document, xhr.ResponseXml);
+        }
+
+        [Test]
+        public async Task ResponseXmlWithoutTypeIsOnlyForXml()
+        {
+            var html = await SendAsync("<p>x", "text/html", XmlHttpRequestResponseType.None).ConfigureAwait(false);
+            var text = await SendAsync("x", "text/plain", XmlHttpRequestResponseType.None).ConfigureAwait(false);
+
+            Assert.IsNull(html.ResponseXml);
+            Assert.IsNull(text.ResponseXml);
+            Assert.AreEqual("<p>x", html.Response);
+        }
+
+        [Test]
+        public async Task ResponseTypeCannotChangeOnceDone()
+        {
+            var xhr = await SendAsync("abc", "text/plain", XmlHttpRequestResponseType.Text).ConfigureAwait(false);
+
+            Assert.AreEqual("abc", xhr.Response);
+            Assert.Throws<DomException>(() => xhr.ResponseType = XmlHttpRequestResponseType.Blob);
+        }
+
+        private static async Task<XmlHttpRequest> SendAsync(String body, String contentType, XmlHttpRequestResponseType type)
+        {
+            var loader = new TestDocumentLoader(request =>
+            {
+                var response = CreateResponse(request.Target.Href, body, HttpStatusCode.OK);
+                response.Headers[HeaderNames.ContentType] = contentType;
+                return new TestDownload(request.Target, Task.FromResult<IResponse>(response));
+            });
+
+            var xhr = await CreateRequesterAsync(loader, "https://origin.example.test/").ConfigureAwait(false);
+            xhr.Open("GET", "https://origin.example.test/data");
+            xhr.ResponseType = type;
+            xhr.Send();
+            await WaitForReadyStateAsync(xhr, RequesterState.Done).ConfigureAwait(false);
+            return xhr;
+        }
+
         private static async Task<XmlHttpRequest> CreateRequesterAsync(IDocumentLoader loader, String address)
         {
             var config = Configuration.Default
