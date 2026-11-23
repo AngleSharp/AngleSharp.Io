@@ -273,7 +273,7 @@ namespace AngleSharp.Io.Tests.Cookie
         [Test]
         public async Task SendingRequestToLocalResourceContainsLocalCookie()
         {
-            var content = "<!doctype html><img src=foo.png />";
+            var content = "<!doctype html><iframe src=foo.png></iframe>";
             var cookieValue = "test=true";
             var requestCount = 0;
             var imgCookie = String.Empty;
@@ -294,7 +294,7 @@ namespace AngleSharp.Io.Tests.Cookie
         [Test]
         public async Task SendingRequestToOtherResourceOmitsLocalCookie()
         {
-            var content = "<!doctype html><img src=http://www.other.com/foo.png />";
+            var content = "<!doctype html><iframe src=http://www.other.com/foo.png></iframe>";
             var cookieValue = "test=true";
             var requestCount = 0;
             var imgCookie = String.Empty;
@@ -353,7 +353,7 @@ namespace AngleSharp.Io.Tests.Cookie
         [Test]
         public async Task SendingRequestToLocalResourceSendsLocalCookie()
         {
-            var content = "<!doctype html><img src=http://www.local.com/foo.png />";
+            var content = "<!doctype html><iframe src=http://www.local.com/foo.png></iframe>";
             var cookieValue = "test=true";
             var requestCount = 0;
             var imgCookie = String.Empty;
