@@ -1,6 +1,6 @@
 # 1.4.0
 
-Released on tbd.
+Released on Monday, November 23 2026.
 
 - Fixed `data:` URLs whose base64 is percent-encoded (e.g. `%2F` for `/`) failing to load
 - Fixed `fetch('')` failing instead of fetching the address of the document
