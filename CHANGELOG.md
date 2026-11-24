@@ -14,6 +14,7 @@ Released on Tuesday, November 24 2026.
 - Added `window.applicationCache`, which downloads the resources the manifest of a document lists and fires the events of the (former) application cache
 - Added the values of form-associated custom elements to `FormData`
 - Added `IoDom.Register`, the DOM of this library declared for a scripting engine
+- Added the `URLPattern` DOM API for matching and extracting URL components
 
 # 1.3.3
 
