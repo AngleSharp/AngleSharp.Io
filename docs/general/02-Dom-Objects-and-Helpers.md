@@ -122,3 +122,15 @@ ws.Closed += (s, e) => Console.WriteLine("socket closed");
 - `Clear()`
 
 It exists as a DOM contract abstraction, suitable for integration and host-specific implementations.
+
+## Scripting Without Reflection
+
+AngleSharp.Js finds the DOM of this library by reflecting over its DOM attributes by default. A trimmed or natively compiled (AoT) application can instead hand it the registration generated for this library at build time, `AngleSharp.Io.IoDom.Register` (a `DomRegistration` of AngleSharp). It declares the Web APIs of the library (`fetch`, `XMLHttpRequest`, `WebSocket`, storage, ...) and the members it adds to the DOM:
+
+```cs
+var config = Configuration.Default
+    .WithIo()
+    .WithJs(IoDom.Register);
+```
+
+The registration describes the version of the library in use, so it never has to be kept in sync by hand. Several libraries are combined with `DomRegistrations.Combine`.

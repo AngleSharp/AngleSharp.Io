@@ -1,6 +1,6 @@
 # 1.4.0
 
-Released on Monday, November 23 2026.
+Released on Tuesday, November 24 2026.
 
 - Fixed `data:` URLs whose base64 is percent-encoded (e.g. `%2F` for `/`) failing to load
 - Fixed `fetch('')` failing instead of fetching the address of the document
@@ -12,6 +12,7 @@ Released on Monday, November 23 2026.
 - Added `DeviceOrientationEvent` and `DeviceMotionEvent`
 - Added `window.applicationCache`, which downloads the resources the manifest of a document lists and fires the events of the (former) application cache
 - Added the values of form-associated custom elements to `FormData`
+- Added `IoDom.Register`, the DOM of this library declared for a scripting engine
 
 # 1.3.3
 
