@@ -6,6 +6,7 @@ Released on Tuesday, November 24 2026.
 - Fixed `fetch('')` failing instead of fetching the address of the document
 - Fixed a redirect with the status 308 (Permanent Redirect) not keeping its cookies
 - Fixed `responseType` of `XMLHttpRequest` always being empty and `response` and `responseXML` always being null; `arraybuffer`, `blob`, `document`, `json` and `text` are supported
+- Updated minimum version of AngleSharp to 1.11.0
 - Added `binaryType` and binary messages (`ArrayBuffer`, `Blob`) to `WebSocket`
 - Added `EventSource` (server-sent events)
 - Added `navigator.geolocation` without a geolocation platform (it can't tell the position then), and the callbacks of the specification (`getCurrentPosition(success, error, options)`, `watchPosition`, `clearWatch`) with `GeolocationPositionError`
