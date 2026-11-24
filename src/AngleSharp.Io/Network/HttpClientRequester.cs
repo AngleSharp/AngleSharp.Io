@@ -157,7 +157,8 @@ namespace AngleSharp.Io.Network
 
             return status == HttpStatusCode.Redirect || status == HttpStatusCode.RedirectKeepVerb ||
                    status == HttpStatusCode.RedirectMethod || status == HttpStatusCode.TemporaryRedirect ||
-                   status == HttpStatusCode.MovedPermanently || status == HttpStatusCode.MultipleChoices;
+                   status == HttpStatusCode.MovedPermanently || status == (HttpStatusCode)308 ||
+                   status == HttpStatusCode.MultipleChoices;
         }
 
         #endregion

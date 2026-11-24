@@ -4,6 +4,7 @@ namespace AngleSharp.Io.Dom
     using AngleSharp.Dom;
     using AngleSharp.Dom.Events;
     using System;
+    using System.IO;
     using System.Linq;
     using System.Net.WebSockets;
     using System.Text;
@@ -28,6 +29,7 @@ namespace AngleSharp.Io.Dom
         private readonly IWindow _window;
 
         private WebSocketReadyState _state;
+        private BinaryType _binaryType;
 
         #endregion
 
@@ -159,6 +161,17 @@ namespace AngleSharp.Io.Dom
         [DomName("protocol")]
         public String Protocol => _ws.SubProtocol ?? String.Empty;
 
+        /// <summary>
+        /// Gets or sets the type binary messages are given as: blobs (the default) or
+        /// array buffers.
+        /// </summary>
+        [DomName("binaryType")]
+        public BinaryType BinaryType
+        {
+            get => _binaryType;
+            set => _binaryType = value;
+        }
+
         #endregion
 
         #region Methods
@@ -168,12 +181,31 @@ namespace AngleSharp.Io.Dom
         /// </summary>
         /// <param name="data">The data to transmit.</param>
         [DomName("send")]
-        public void Send(String data)
+        public void Send(String data) =>
+            Send(Encoding.UTF8.GetBytes(data ?? String.Empty), WebSocketMessageType.Text);
+
+        /// <summary>
+        /// Transmits binary data (an ArrayBuffer) using the connection.
+        /// </summary>
+        /// <param name="data">The data to transmit.</param>
+        [DomName("send")]
+        public void Send(Byte[] data) =>
+            Send(data ?? Array.Empty<Byte>(), WebSocketMessageType.Binary);
+
+        /// <summary>
+        /// Transmits the contents of a blob using the connection.
+        /// </summary>
+        /// <param name="data">The data to transmit.</param>
+        [DomName("send")]
+        public void Send(Blob data) =>
+            Send(data?.GetBytes() ?? Array.Empty<Byte>(), WebSocketMessageType.Binary);
+
+        private void Send(Byte[] data, WebSocketMessageType type)
         {
             if (_state == WebSocketReadyState.Open)
             {
-                SendAsync(data).Forget();
-            } 
+                SendAsync(data, type).Forget();
+            }
             else if (_state != WebSocketReadyState.Connecting)
             {
                 throw new Exception("WebSocket is already in CLOSING or CLOSED state.");
@@ -242,9 +274,8 @@ namespace AngleSharp.Io.Dom
             return true;
         }
 
-        private async Task SendAsync(String message)
+        private async Task SendAsync(Byte[] messageBuffer, WebSocketMessageType type)
         {
-            var messageBuffer = Encoding.UTF8.GetBytes(message);
             var remainder = 0;
             var messagesCount = Math.DivRem(messageBuffer.Length, SendChunkSize, out remainder);
 
@@ -261,7 +292,7 @@ namespace AngleSharp.Io.Dom
                 var lastMessage = (i + 1) == messagesCount;
                 var count = lastMessage ? remainder : SendChunkSize;
                 var segment = new ArraySegment<Byte>(messageBuffer, offset, count);
-                await _ws.SendAsync(segment, WebSocketMessageType.Text, lastMessage, _cts.Token).ConfigureAwait(false);
+                await _ws.SendAsync(segment, type, lastMessage, _cts.Token).ConfigureAwait(false);
                 remainder -= SendChunkSize;
             }
         }
@@ -277,7 +308,7 @@ namespace AngleSharp.Io.Dom
         private async Task ListenAsync()
         {
             var buffer = new Byte[ReceiveChunkSize];
-            var stringResult = new StringBuilder();
+            var message = new MemoryStream();
 
             try
             {
@@ -292,12 +323,21 @@ namespace AngleSharp.Io.Dom
                         break;
                     }
 
-                    stringResult.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
+                    message.Write(buffer, 0, result.Count);
 
                     if (result.EndOfMessage)
                     {
-                        OnMessage(stringResult.ToString());
-                        stringResult.Clear();
+                        var bytes = message.ToArray();
+                        message.SetLength(0);
+
+                        if (result.MessageType == WebSocketMessageType.Binary)
+                        {
+                            OnMessage(_binaryType == BinaryType.ArrayBuffer ? bytes : new Blob(bytes));
+                        }
+                        else
+                        {
+                            OnMessage(Encoding.UTF8.GetString(bytes));
+                        }
                     }
                 }
             }
@@ -316,7 +356,7 @@ namespace AngleSharp.Io.Dom
             _state = WebSocketReadyState.Closed;
         }
 
-        private void OnMessage(String message)
+        private void OnMessage(Object message)
         {
             var evt = new MessageEvent();
             evt.Init(EventNames.Message, false, false, message, _url.Origin, String.Empty, _window);

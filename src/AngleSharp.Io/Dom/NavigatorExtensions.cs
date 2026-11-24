@@ -2,6 +2,7 @@ namespace AngleSharp.Io.Dom
 {
     using AngleSharp.Browser.Dom;
     using AngleSharp.Attributes;
+    using AngleSharp.Browser;
     using AngleSharp.Dom;
     using System;
     using System.Runtime.CompilerServices;
@@ -14,6 +15,7 @@ namespace AngleSharp.Io.Dom
     public static class NavigatorExtensions
     {
         private static readonly ConditionalWeakTable<INavigator, Clipboard> DeniedClipboards = new ConditionalWeakTable<INavigator, Clipboard>();
+        private static readonly ConditionalWeakTable<INavigator, Geolocation> UnavailableGeolocations = new ConditionalWeakTable<INavigator, Geolocation>();
         private static readonly ConditionalWeakTable<INavigator, Permissions> PermissionsByNavigator = new ConditionalWeakTable<INavigator, Permissions>();
 
         /// <summary>
@@ -106,13 +108,24 @@ namespace AngleSharp.Io.Dom
         /// <summary>
         /// Gets the geolocation object.
         /// </summary>
-        [DomName("geolocation")]
-        [DomAccessor(Accessors.Getter)]
         public static Geolocation Geolocation(this INavigator navigator)
         {
             var context = GetContext(navigator);
             var factory = context?.GetService<IGeolocationProviderFactory>();
             return factory?.GetGeolocation(navigator);
+        }
+
+        /// <summary>
+        /// Gets the geolocation object as script sees it: pages test for it, so without
+        /// a platform it is one that cannot determine a position.
+        /// </summary>
+        [DomName("geolocation")]
+        [DomAccessor(Accessors.Getter)]
+        public static Geolocation GeolocationOrUnavailable(this INavigator navigator)
+        {
+            var geolocation = navigator.Geolocation() ?? UnavailableGeolocations.GetValue(navigator, _ => new Geolocation(new UnavailableGeolocationPlatform()));
+            geolocation.Loop ??= GetContext(navigator)?.GetService<IEventLoop>();
+            return geolocation;
         }
 
         /// <summary>
@@ -197,6 +210,12 @@ namespace AngleSharp.Io.Dom
         {
             return (navigator as Navigator)?.Context;
         }
+    }
+
+    sealed class UnavailableGeolocationPlatform : IGeolocationPlatform
+    {
+        public Task<GeolocationReading> GetCurrentPositionAsync(GeolocationOptions options) =>
+            throw new InvalidOperationException("The position is unavailable.");
     }
 
     sealed class DeniedClipboardPlatform : IClipboardPlatform

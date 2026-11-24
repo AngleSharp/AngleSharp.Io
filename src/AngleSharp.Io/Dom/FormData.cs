@@ -30,6 +30,27 @@ namespace AngleSharp.Io.Dom
                 {
                     AddEntries(element);
                 }
+
+                AddCustomElementEntries(form);
+            }
+        }
+
+        /// <summary>
+        /// Adds what the form-associated custom elements of the form submit (their internals' value).
+        /// </summary>
+        private void AddCustomElementEntries(IHtmlFormElement form)
+        {
+            if (form.Owner is not { } document)
+            {
+                return;
+            }
+
+            foreach (var element in document.QuerySelectorAll("[name]"))
+            {
+                if (element.LocalName.IndexOf('-') >= 0 && ElementInternals.GetSubmissionValue(element, form) is String value)
+                {
+                    Append(element.GetAttribute(AttributeNames.Name), value);
+                }
             }
         }
 

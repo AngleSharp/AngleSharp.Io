@@ -20,6 +20,14 @@ namespace AngleSharp.Io.Dom
     public static class WindowExtensions
     {
         /// <summary>
+        /// Gets the application cache of the window, which processes the manifest of the document.
+        /// </summary>
+        [DomName("applicationCache")]
+        [DomAccessor(Accessors.Getter)]
+        public static AngleSharp.Browser.Dom.IApplicationCache ApplicationCache(this IWindow window) =>
+            window is null ? null : Dom.ApplicationCache.Get(window);
+
+        /// <summary>
         /// Gets the localStorage object.
         /// </summary>
         [DomName("localStorage")]
@@ -162,7 +170,8 @@ namespace AngleSharp.Io.Dom
                 throw new ArgumentNullException(nameof(window));
             }
 
-            if (String.IsNullOrEmpty(url))
+            //  an empty URL is relative, i.e., the address of the document
+            if (url == null)
             {
                 throw new ArgumentNullException(nameof(url));
             }

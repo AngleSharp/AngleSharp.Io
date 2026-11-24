@@ -1,3 +1,21 @@
+# 1.4.0
+
+Released on Tuesday, November 24 2026.
+
+- Fixed `data:` URLs whose base64 is percent-encoded (e.g. `%2F` for `/`) failing to load
+- Fixed `fetch('')` failing instead of fetching the address of the document
+- Fixed a redirect with the status 308 (Permanent Redirect) not keeping its cookies
+- Fixed `responseType` of `XMLHttpRequest` always being empty and `response` and `responseXML` always being null; `arraybuffer`, `blob`, `document`, `json` and `text` are supported
+- Updated minimum version of AngleSharp to 1.11.0
+- Added `binaryType` and binary messages (`ArrayBuffer`, `Blob`) to `WebSocket`
+- Added `EventSource` (server-sent events)
+- Added `navigator.geolocation` without a geolocation platform (it can't tell the position then), and the callbacks of the specification (`getCurrentPosition(success, error, options)`, `watchPosition`, `clearWatch`) with `GeolocationPositionError`
+- Added `DeviceOrientationEvent` and `DeviceMotionEvent`
+- Added `window.applicationCache`, which downloads the resources the manifest of a document lists and fires the events of the (former) application cache
+- Added the values of form-associated custom elements to `FormData`
+- Added `IoDom.Register`, the DOM of this library declared for a scripting engine
+- Added the `URLPattern` DOM API for matching and extracting URL components
+
 # 1.3.3
 
 Released on Tuesday, November 17 2026.

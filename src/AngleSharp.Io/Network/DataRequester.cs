@@ -60,7 +60,7 @@ namespace AngleSharp.Io.Network
 
                 try
                 {
-                    var raw = base64 ? Convert.FromBase64String(parts[1]) : parts[1].UrlDecode();
+                    var raw = base64 ? DecodeBase64(parts[1]) : parts[1].UrlDecode();
                     content.Write(raw, 0, raw.Length);
                     content.Position = 0;
                     response.Headers.Add(HeaderNames.ContentType, mimeType);
@@ -72,6 +72,32 @@ namespace AngleSharp.Io.Network
             }
 
             return Task.FromResult<IResponse>(response);
+        }
+
+        /// <summary>
+        /// The body of a base64 data URL is percent-decoded first (e.g. "%2F" for '/'), and
+        /// whitespace in it is ignored, as are missing padding characters (Fetch, data: URL
+        /// processor; forgiving-base64 decode).
+        /// </summary>
+        private static Byte[] DecodeBase64(String body)
+        {
+            var text = body.IndexOf('%') >= 0 ? Uri.UnescapeDataString(body) : body;
+            var sb = new System.Text.StringBuilder(text.Length + 3);
+
+            foreach (var c in text)
+            {
+                if (!Char.IsWhiteSpace(c))
+                {
+                    sb.Append(c);
+                }
+            }
+
+            while (sb.Length % 4 != 0 && sb.Length % 4 != 1)
+            {
+                sb.Append('=');
+            }
+
+            return Convert.FromBase64String(sb.ToString());
         }
 
         #endregion
